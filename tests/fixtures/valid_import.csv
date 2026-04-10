@@ -1,0 +1,11 @@
+sku_id,name,category,size,weight,location_id,aisle,position,level
+SKU-I001,Schoonmaakdoekjes,household,M,0.3,LOC-A01-L01-L1,A01,1,1
+SKU-I002,Shampoo 250ml,beauty,S,0.25,LOC-A01-L02-L1,A01,2,1
+SKU-I003,Puzzel 500st,toys,M,0.8,LOC-A02-L01-L2,A02,1,2
+SKU-I004,Chips Paprika 200g,food_snacks,S,0.2,LOC-A02-L03-L1,A02,3,1
+SKU-I005,BBQ Houtskool 3kg,garden_seasonal,L,3.0,LOC-A03-L01-L1,A03,1,1
+SKU-I006,Sokken maat 43,clothing_accessories,S,0.1,LOC-A03-L02-L2,A03,2,2
+SKU-I007,Balpen 10st,office,S,0.05,LOC-A04-L01-L1,A04,1,1
+SKU-I008,Hondenvoer 500g,pet,M,0.5,LOC-A04-L02-L1,A04,2,1
+SKU-I009,Kaars 15cm,decoration,S,0.15,LOC-A05-L01-L1,A05,1,1
+SKU-I010,WC-reiniger 750ml,household,M,0.8,LOC-A05-L02-L2,A05,2,2

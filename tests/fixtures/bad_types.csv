@@ -1,0 +1,6 @@
+sku_id,name,category,size,weight,location_id,aisle,position,level
+SKU-B001,Good Product,household,M,0.5,LOC-A01-L01-L1,A01,1,1
+SKU-B002,Bad Weight,household,M,-2.0,LOC-A01-L02-L1,A01,2,1
+SKU-B003,Bad Category,invalid_cat,M,0.5,LOC-A02-L01-L1,A02,1,1
+SKU-B004,Bad Level,household,M,0.5,LOC-A02-L02-L1,A02,2,99
+SKU-B005,Bad Size,household,X,0.5,LOC-A03-L01-L1,A03,1,1
