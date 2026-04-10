@@ -26,6 +26,24 @@
 3. **AAA Frontend** — Warehouse visualisatie + opex dashboards
 4. **Propositie & Polish** — Presentatie + documentatie + data-import
 
+## Sprint 1 Deliverables
+
+### Research Notes
+- [[research/papers/slotting-taxonomy|Slotting Problem Taxonomy]]
+- [[research/papers/tsp-warehouse-routing|TSP & Warehouse Routing]]
+- [[research/papers/pick-route-heuristics|Pick-Route Heuristics Overview]]
+- [[research/algorithms/warehouse-graph-model|Warehouse Graph Model]]
+- [[research/algorithms/distance-metrics|Distance Metrics]]
+- [[research/algorithms/s-shape-heuristic|S-Shape Heuristic]]
+- [[research/algorithms/largest-gap-heuristic|Largest Gap Heuristic]]
+- [[research/algorithms/pick-route-comparison|Pick-Route Comparison]]
+
+### Code Components
+- `slotting/models/` — Domain models (Warehouse, SKU, Order)
+- `slotting/warehouse_graph.py` — NetworkX graph voor distance/routing
+- `slotting/generators/` — Synthetische data generators (warehouse, SKU, orders)
+- `slotting/io/export.py` — JSON/CSV export
+
 ## Beslissingen
 - Iteratieve spiraal aanpak: research en bouw versterken elkaar per sprint
 - Synthetische data eerst, ontwerp klaar voor echte Action-data later
