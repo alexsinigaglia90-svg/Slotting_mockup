@@ -13,6 +13,7 @@ import {
 } from "@/lib/warehouse-geometry";
 import { DEFAULT_WAREHOUSE_CONFIG } from "@/lib/types";
 import { getVelocityClass, VELOCITY_COLORS } from "@/lib/color-scales";
+import PickRouteLine from "./pick-route-line";
 
 function InstancedRacks() {
   const meshRef = useRef<THREE.InstancedMesh>(null);
@@ -126,7 +127,12 @@ function AisleLabels() {
   );
 }
 
-export default function WarehouseScene() {
+interface WarehouseSceneProps {
+  pickRouteWaypoints?: string[];
+  pickRouteColor?: string;
+}
+
+export default function WarehouseScene({ pickRouteWaypoints, pickRouteColor }: WarehouseSceneProps = {}) {
   const center = getWarehouseCenter();
 
   return (
@@ -149,6 +155,9 @@ export default function WarehouseScene() {
           <DepotMarker />
           <AisleLabels />
           <InstancedRacks />
+          {pickRouteWaypoints && pickRouteWaypoints.length >= 2 && (
+            <PickRouteLine waypoints={pickRouteWaypoints} color={pickRouteColor} />
+          )}
           <OrbitControls
             target={[center.x, center.y, center.z]}
             enableDamping
