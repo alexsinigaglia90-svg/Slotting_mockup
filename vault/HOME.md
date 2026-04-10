@@ -92,7 +92,31 @@
 - Opex dashboard met configureerbare parameters (FTE, kosten, ROI)
 - Dark theme, professionele AAA-grade look
 
+## Sprint 4 Deliverables
+
+### Data Import Pipeline
+- `slotting/io/importer.py` — CSV reader, validator, column mapper voor echte Action data
+- `slotting/api/routes.py` — POST /import endpoint voor bestandsupload
+- Handles: validatie-errors, partial imports, column mapping
+
+### Propositie Presentatie
+- `presentation/index.html` — Self-contained reveal.js deck (~18 slides)
+- Narratief: probleem → oplossing → demo → resultaten → volgende stappen
+- Speaker notes voor presentatie-begeleiding
+
+### Product Documentatie
+- `docs/architecture.md` — Systeemarchitectuur (4 lagen, dataflow)
+- `docs/api-reference.md` — Alle API endpoints met schema's en voorbeelden
+- `docs/deployment.md` — Setup en deployment handleiding
+
+### Demo Rehearsal
+- `docs/demo-rehearsal.md` — Stap-voor-stap 15-20 min demo script met contingencies
+
+### Key Result
+**v1.0.0** — Compleet leverbaar pakket: werkende demo + presentatie + documentatie + data import pipeline klaar voor echte Action data.
+
 ## Beslissingen
 - Iteratieve spiraal aanpak: research en bouw versterken elkaar per sprint
 - Synthetische data eerst, ontwerp klaar voor echte Action-data later
 - Obsidian vault dient als AI-kennisbasis, bron voor presentatie en productdocumentatie
+- v1.0.0 bereikt: alle 4 sprints compleet
