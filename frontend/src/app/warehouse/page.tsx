@@ -1,76 +1,549 @@
 "use client";
 
-import { useState } from "react";
-import dynamic from "next/dynamic";
+import { useState, useCallback, useRef, useEffect } from "react";
 
-const WarehouseScene = dynamic(
-  () => import("@/components/warehouse-3d/warehouse-scene"),
-  { ssr: false, loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-[var(--background)]">
-      <p className="text-[var(--muted-foreground)]">Loading 3D scene...</p>
-    </div>
-  )}
-);
+/* ═══ MOCK DATA ═══ */
+const NUM_AISLES = 15;
+const RACKS_PER_SIDE = 20;
+type Velocity = "A" | "B" | "C" | "D" | "empty";
 
-const Warehouse2D = dynamic(
-  () => import("@/components/warehouse-2d/warehouse-2d"),
-  { ssr: false, loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-[var(--background)]">
-      <p className="text-[var(--muted-foreground)]">Loading 2D view...</p>
-    </div>
-  )}
-);
+interface Loc {
+  id: string; aisle: number; side: "L" | "R"; position: number; level: number;
+  velocity: Velocity; skuName: string | null; skuId: string | null;
+  category: string | null; picksWeek: number; picksMonth: number;
+  lastPicked: string | null; depotDist: number; efficiency: number;
+  stock: number; maxStock: number;
+}
 
-const LEGEND_ITEMS = [
-  { color: "#ef4444", label: "A-class (fast movers)" },
-  { color: "#eab308", label: "B-class" },
-  { color: "#60a5fa", label: "C-class" },
-  { color: "#3b82f6", label: "D-class (slow movers)" },
+const CATS = ["Huishoudelijk","Beauty","Speelgoed","Food","Tuin & Seizoen","Kleding","Kantoor","Dier","Decoratie"];
+const PRODS: Record<string,string[]> = {
+  Huishoudelijk:["Afwasmiddel 500ml","Allesreiniger Spray","WC-Reiniger","Schoonmaakdoekjes 80st","Waspoeder 2kg"],
+  Beauty:["Shampoo Argan 300ml","Douchegel Kokos","Handcrème Aloe","Tandpasta Fresh Mint","Deodorant Sport"],
+  Speelgoed:["Puzzel 500st Dieren","Kleurpotloden 24st","Speelgoedauto Rood","Knuffel Beer 30cm","Kaartspel Uno"],
+  Food:["Chips Paprika 200g","Chocoladereep Puur","Nootjes Mix 300g","Popcorn Zoet","Koekjes Boter 250g"],
+  "Tuin & Seizoen":["BBQ Houtskool 3kg","Tuinkaars Citronella","Plantenpot 20cm","Gieter 5L Groen","Zaadjes Tomaat"],
+  Kleding:["Sokken Maat 39-42","T-shirt Basic Wit","Cap Zwart","Sjaal Wol Grijs","Riem Leder Bruin"],
+  Kantoor:["Balpen Blauw 10st","Notitieboek A5 Lijntjes","Plakband 3st","Schaar RVS 21cm","Markeerstiften 6st"],
+  Dier:["Hondenvoer Kip 500g","Kattenvoer Zalm","Kattenbakkorrels 10L","Hondensnoepjes Dental","Voerbak RVS"],
+  Decoratie:["Kaars 15cm Wit 3st","Fotolijst Eiken 13x18","Vaas Glas Cilinder","Kussen Velvet 45x45","Kunstbloem Roos"],
+};
+
+function rng(seed:number){let s=seed;return()=>{s=(s*16807)%2147483647;return s/2147483647;};}
+
+function genLocs():Loc[]{
+  const r=rng(42);const locs:Loc[]=[];let idx=0;
+  for(let a=0;a<NUM_AISLES;a++)for(const side of["L","R"]as const)
+    for(let p=1;p<=RACKS_PER_SIDE;p++)for(let l=1;l<=5;l++){
+      idx++;const d=(a/NUM_AISLES+(l-1)/5)/2;const empty=r()<0.04;
+      const vel:Velocity=empty?"empty":d<0.15?"A":d<0.35?"B":d<0.6?"C":"D";
+      const cat=empty?null:CATS[Math.floor(r()*CATS.length)];
+      const prods=cat?PRODS[cat]:null;
+      const pw=vel==="A"?30+Math.floor(r()*70):vel==="B"?10+Math.floor(r()*25):vel==="C"?2+Math.floor(r()*10):vel==="D"?Math.floor(r()*3):0;
+      locs.push({
+        id:`A${String(a+1).padStart(2,"0")}-${side}${String(p).padStart(2,"0")}-L${l}`,
+        aisle:a,side:side as"L"|"R",position:p,level:l,velocity:vel,
+        skuId:empty?null:`SKU-${String(idx).padStart(5,"0")}`,
+        skuName:empty?null:prods?prods[Math.floor(r()*prods.length)]:null,
+        category:cat,picksWeek:pw,picksMonth:pw*4+Math.floor(r()*pw),
+        lastPicked:empty?null:`${Math.floor(r()*48)}u geleden`,
+        depotDist:Math.round((a*4.5+p*2+l*0.5)*10)/10,
+        efficiency:empty?0:vel==="A"&&a<3?85+Math.floor(r()*15):vel==="A"&&a>8?12+Math.floor(r()*20):35+Math.floor(r()*45),
+        maxStock:vel==="A"?48:vel==="B"?36:vel==="C"?24:12,
+        stock:empty?0:vel==="A"?8+Math.floor(r()*40):vel==="B"?5+Math.floor(r()*30):vel==="C"?2+Math.floor(r()*22):Math.floor(r()*12),
+      });
+    }
+  return locs;
+}
+
+const LOCS=genLocs();
+const VCOL:Record<Velocity,string>={A:"#ff5c7c",B:"#ffb340",C:"#4da8ff",D:"#6478a0",empty:"transparent"};
+
+const PROBLEMS=[
+  {sev:"critical"as const,msg:"12 A-class SKUs op niveau 4-5 — dagelijks 2.340m onnodige loopafstand"},
+  {sev:"critical"as const,msg:"Gangpad A03: 3.2× meer traffic dan A12 — ernstig ongebalanceerd"},
+  {sev:"warning"as const,msg:"BBQ-seizoen nadert: 47 tuin-SKUs moeten naar forward-pick zone"},
+  {sev:"warning"as const,msg:"Beauty/Huishoudelijk cluster verspreid over 6 gangpaden — inefficiënt"},
+  {sev:"info"as const,msg:"23 D-class SKUs bezetten premium locaties in A01-A03"},
 ];
 
-export default function WarehousePage() {
-  const [viewMode, setViewMode] = useState<"3d" | "2d">("3d");
-
-  return (
-    <div className="h-screen relative">
-      {viewMode === "3d" ? <WarehouseScene /> : <Warehouse2D />}
-      <div className="absolute top-4 right-4 flex gap-2">
-        <button
-          onClick={() => setViewMode("3d")}
-          className={`px-3 py-1.5 text-xs border border-[var(--border)] rounded-md transition-colors ${
-            viewMode === "3d"
-              ? "bg-[var(--primary)] text-white"
-              : "bg-[var(--card)] hover:bg-[var(--muted)]"
-          }`}
-        >
-          3D View
-        </button>
-        <button
-          onClick={() => setViewMode("2d")}
-          className={`px-3 py-1.5 text-xs border border-[var(--border)] rounded-md transition-colors ${
-            viewMode === "2d"
-              ? "bg-[var(--primary)] text-white"
-              : "bg-[var(--card)] hover:bg-[var(--muted)]"
-          }`}
-        >
-          2D Top-Down
-        </button>
+/* ═══ SIDEBAR ═══ */
+function Sidebar({active,onChange}:{active:string;onChange:(v:string)=>void}){
+  const items=[
+    {id:"overview",label:"Overzicht",icon:"⊞"},
+    {id:"warehouse",label:"Warehouse Map",icon:"⊟"},
+    {id:"problems",label:"Problemen",icon:"⚡",badge:5},
+    {id:"optimize",label:"Optimalisatie",icon:"◉"},
+    {id:"movements",label:"Verplaatsingen",icon:"⇄"},
+    {id:"opex",label:"Opex Impact",icon:"€"},
+  ];
+  return(
+    <div style={{width:240,minHeight:"100vh",background:"var(--bg-surface)",borderRight:"1px solid var(--border-medium)",display:"flex",flexDirection:"column",padding:"20px 0",animation:"slideInLeft 0.35s var(--ease-out) backwards",position:"relative",zIndex:2}}>
+      <div style={{padding:"0 20px",marginBottom:32}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}>
+          <div style={{width:30,height:30,borderRadius:10,background:"linear-gradient(135deg, var(--accent-purple), var(--velocity-a))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff",boxShadow:"0 2px 8px rgba(139,111,255,0.25)"}}>S</div>
+          <span style={{fontSize:17,fontWeight:800,letterSpacing:"-0.03em"}}>SlotPilot</span>
+        </div>
+        <span style={{fontSize:10,fontWeight:500,color:"var(--text-tertiary)",letterSpacing:"0.06em",textTransform:"uppercase"}}>Warehouse Intelligence</span>
       </div>
-      {/* Velocity color legend */}
-      <div className="absolute bottom-4 left-4 bg-[var(--card)]/90 backdrop-blur-sm border border-[var(--border)] rounded-lg p-3">
-        <p className="text-xs font-semibold text-[var(--foreground)] mb-2">Velocity Class</p>
-        <div className="flex flex-col gap-1.5">
-          {LEGEND_ITEMS.map((item) => (
-            <div key={item.color} className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded-sm inline-block"
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-xs text-[var(--muted-foreground)]">{item.label}</span>
-            </div>
-          ))}
+      <nav className="stagger" style={{padding:"0 10px",flex:1,display:"flex",flexDirection:"column",gap:2}}>
+        {items.map(it=>(
+          <button key={it.id} onClick={()=>onChange(it.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:"var(--radius-sm)",border:"none",cursor:"pointer",background:active===it.id?"var(--accent-purple-soft)":"transparent",color:active===it.id?"var(--accent-purple)":"var(--text-secondary)",fontSize:13,fontWeight:active===it.id?600:450,fontFamily:"var(--font-sans)",transition:"all 0.15s ease"}}>
+            <span style={{width:18,textAlign:"center",fontSize:13}}>{it.icon}</span>
+            <span style={{flex:1,textAlign:"left"}}>{it.label}</span>
+            {it.badge&&<span style={{background:"var(--accent-red)",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 6px",borderRadius:"var(--radius-full)",minWidth:18,textAlign:"center"}}>{it.badge}</span>}
+          </button>
+        ))}
+      </nav>
+      <div style={{padding:"16px 20px",borderTop:"1px solid var(--border-light)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"var(--text-tertiary)"}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:"var(--accent-green)"}}/>WMS Connected — DC Echt
+        </div>
+        <div style={{fontSize:10,color:"var(--text-tertiary)",marginTop:4}}>Laatste sync: 4 min geleden</div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══ ZOOMABLE WAREHOUSE MAP WITH LIVE PICKS ═══ */
+function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal}:{level:number;onHover:(l:Loc|null,x:number,y:number)=>void;onSelect:(l:Loc|null)=>void;onShowProposal:()=>void;clearSuboptimal:boolean}){
+  const filtered=level===0?LOCS.filter(l=>l.level===1):LOCS.filter(l=>l.level===level);
+  const [scale,setScale]=useState(1);
+  const [pan,setPan]=useState({x:0,y:0});
+  const [dragging,setDragging]=useState(false);
+  const [activePicks,setActivePicks]=useState<Set<string>>(new Set());
+  const [pickCount,setPickCount]=useState(0);
+  const dragStart=useRef({x:0,y:0,px:0,py:0});
+  const containerRef=useRef<HTMLDivElement>(null);
+
+  // Suboptimal locations — detected after enough picks
+  const [suboptimal,setSuboptimal]=useState<Set<string>>(new Set());
+
+  // Clear suboptimal when confirmed
+  useEffect(()=>{
+    if(clearSuboptimal){setSuboptimal(new Set());}
+  },[clearSuboptimal]);
+
+  // Live pick simulation + suboptimal detection
+  useEffect(()=>{
+    const nonEmpty=LOCS.filter(l=>l.velocity!=="empty"&&l.level===1);
+    let totalPicks=0;
+    let detected=false;
+
+    const interval=setInterval(()=>{
+      // Simulate picks
+      const count=1+Math.floor(Math.random()*3);
+      const picked=new Set<string>();
+      for(let i=0;i<count;i++){
+        const loc=nonEmpty[Math.floor(Math.random()*nonEmpty.length)];
+        picked.add(loc.id);
+      }
+      setActivePicks(picked);
+      totalPicks+=picked.size;
+      setPickCount(totalPicks);
+      setTimeout(()=>setActivePicks(new Set()),600);
+
+      // After 20 picks, detect suboptimal
+      if(totalPicks>=20&&!detected){
+        detected=true;
+        const subs=new Set<string>();
+        nonEmpty.forEach(l=>{
+          if(l.picksWeek>30&&l.aisle>=5) subs.add(l.id);
+          if(l.picksWeek<5&&l.aisle<=2) subs.add(l.id);
+        });
+        setSuboptimal(subs);
+      }
+    },900);
+
+    return()=>clearInterval(interval);
+  },[]);
+
+  const onWheel=useCallback((e:React.WheelEvent)=>{
+    e.preventDefault();
+    const el=containerRef.current;
+    if(!el)return;
+    const rect=el.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
+    const my=e.clientY-rect.top;
+    const f=e.deltaY>0?0.92:1.08;
+    const ns=Math.min(10,Math.max(0.8,scale*f));
+    setPan(p=>({x:mx-(mx-p.x)*(ns/scale),y:my-(my-p.y)*(ns/scale)}));
+    setScale(ns);
+  },[scale]);
+
+  const onDown=useCallback((e:React.MouseEvent)=>{if(e.button!==0)return;setDragging(true);dragStart.current={x:e.clientX,y:e.clientY,px:pan.x,py:pan.y};},[pan]);
+  const onMove=useCallback((e:React.MouseEvent)=>{if(!dragging)return;setPan({x:dragStart.current.px+e.clientX-dragStart.current.x,y:dragStart.current.py+e.clientY-dragStart.current.y});},[dragging]);
+  const onUp=useCallback(()=>setDragging(false),[]);
+
+  return(
+    <div ref={containerRef} onWheel={onWheel} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
+      style={{flex:1,overflow:"hidden",background:"transparent",cursor:dragging?"grabbing":"grab",position:"relative",zIndex:1}}>
+      {/* Zoom + live picks indicator */}
+      <div style={{position:"absolute",top:12,left:12,zIndex:5,display:"flex",gap:8}}>
+        <div style={{padding:"5px 12px",borderRadius:"var(--radius-full)",background:"var(--bg-elevated)",border:"1px solid var(--border-medium)",fontSize:11,fontWeight:500,color:"var(--text-secondary)",fontFamily:"var(--font-mono)"}}>
+          {Math.round(scale*100)}%
+        </div>
+        <div style={{padding:"5px 12px",borderRadius:"var(--radius-full)",background:"var(--bg-elevated)",border:"1px solid var(--border-medium)",fontSize:11,fontWeight:500,display:"flex",alignItems:"center",gap:6}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:"var(--accent-green)",animation:"pulse 1.5s ease infinite"}}/>
+          <span style={{color:"var(--accent-green)",fontFamily:"var(--font-mono)"}}>{pickCount} picks</span>
+          <span style={{color:"var(--text-tertiary)"}}>live</span>
         </div>
       </div>
+      {/* Suboptimal alert — fixed position so it's not clipped by overflow:hidden */}
+      {suboptimal.size>0&&(
+        <div style={{position:"fixed",top:70,left:260,zIndex:100}}>
+          <SuboptimalAlert count={suboptimal.size} onViewProposal={onShowProposal}/>
+        </div>
+      )}
+      {/* Zoomable content */}
+      <div style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${scale})`,transformOrigin:"0 0",padding:"20px 24px",willChange:"transform"}}>
+        <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 14px",borderRadius:"var(--radius-full)",background:"rgba(54,216,158,0.12)",border:"1px solid rgba(54,216,158,0.25)",fontSize:11,fontWeight:600,color:"var(--accent-green)",marginBottom:14}}>
+          <span style={{width:7,height:7,borderRadius:"50%",background:"var(--accent-green)",animation:"pulse 2s ease infinite"}}/>DEPOT
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          {Array.from({length:NUM_AISLES},(_,ai)=>{
+            const al=filtered.filter(l=>l.aisle===ai);
+            const left=al.filter(l=>l.side==="L").sort((a,b)=>a.position-b.position);
+            const right=al.filter(l=>l.side==="R").sort((a,b)=>a.position-b.position);
+            const totalPicks=al.reduce((s,l)=>s+l.picksWeek,0);
+            return(
+              <div key={ai} className="aisle-enter" style={{display:"flex",flexDirection:"column",alignItems:"center",animationDelay:`${ai*0.06}s`}}>
+                <div style={{textAlign:"center",marginBottom:4}}>
+                  <div style={{fontSize:11,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--text-secondary)"}}>A{String(ai+1).padStart(2,"0")}</div>
+                  <div style={{fontSize:9,color:"var(--text-tertiary)",fontWeight:500}}>{totalPicks}/wk</div>
+                </div>
+                <div style={{display:"flex",gap:6}}>
+                  {[left,right].map((side,si)=>(
+                    <div key={si} style={{display:"flex",flexDirection:"column",gap:1}}>
+                      {side.map((loc,ci)=>(
+                        <div key={loc.id}
+                          onMouseEnter={(e)=>{e.stopPropagation();onHover(loc,e.clientX,e.clientY);}}
+                          onMouseLeave={()=>onHover(null,0,0)}
+                          onClick={(e)=>{e.stopPropagation();onSelect(loc);}}
+                          style={{
+                            width:14,height:7,borderRadius:2,
+                            background:VCOL[loc.velocity],
+                            opacity:loc.velocity==="empty"?0:0.9,
+                            cursor:loc.velocity!=="empty"?"pointer":"default",
+                            ...(activePicks.has(loc.id)
+                              ?{animation:"pickFlash 0.6s ease-out",zIndex:5}
+                              :suboptimal.has(loc.id)
+                              ?{animation:"suboptimalPulse 2s ease-in-out infinite",outline:"1.5px solid rgba(255,92,108,0.6)",outlineOffset:"1px",zIndex:3}
+                              :{animation:`cellAppear 0.3s var(--ease-spring) ${ai*0.06+ci*0.008}s backwards`}),
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══ SUBOPTIMAL ALERT ═══ */
+function SuboptimalAlert({count,onViewProposal}:{count:number;onViewProposal:()=>void}){
+  return(
+    <div style={{padding:"10px 20px",borderRadius:"var(--radius-md)",background:"#2a1520",border:"1px solid rgba(255,92,108,0.3)",boxShadow:"0 4px 20px rgba(255,92,108,0.15)",display:"flex",alignItems:"center",gap:12,animation:"slideUp 0.4s var(--ease-out) backwards",maxWidth:500}}>
+      <span style={{width:8,height:8,borderRadius:"50%",background:"var(--accent-red)",animation:"pulse 1.5s ease infinite",flexShrink:0}}/>
+      <div style={{flex:1}}>
+        <div style={{fontSize:12,fontWeight:600,color:"var(--accent-red)",marginBottom:2}}>Suboptimale slotting gedetecteerd</div>
+        <div style={{fontSize:11,color:"var(--text-secondary)"}}>{count} locaties vereisen herslotting — A-class producten te ver van depot, D-class op premium locaties</div>
+      </div>
+      <button onClick={onViewProposal} style={{padding:"6px 16px",borderRadius:"var(--radius-sm)",background:"var(--accent-red)",color:"#fff",border:"none",fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",transition:"transform 0.1s ease"}} onMouseOver={e=>{e.currentTarget.style.transform="scale(1.05)"}} onMouseOut={e=>{e.currentTarget.style.transform="scale(1)"}}>Bekijk voorstel</button>
+    </div>
+  );
+}
+
+/* ═══ RESLOT PROPOSAL PANEL ═══ */
+function ReslotProposal({suboptimalCount,onConfirm,onCancel}:{suboptimalCount:number;onConfirm:()=>void;onCancel:()=>void}){
+  const [holding,setHolding]=useState(false);
+  const [holdProgress,setHoldProgress]=useState(0);
+  const [confirmed,setConfirmed]=useState(false);
+  const holdTimer=useRef<ReturnType<typeof setInterval>|null>(null);
+
+  const startHold=()=>{
+    setHolding(true);
+    setHoldProgress(0);
+    let p=0;
+    holdTimer.current=setInterval(()=>{
+      p+=2;
+      setHoldProgress(p);
+      if(p>=100){
+        if(holdTimer.current) clearInterval(holdTimer.current);
+        setConfirmed(true);
+        setTimeout(()=>onConfirm(),1500);
+      }
+    },30);
+  };
+  const cancelHold=()=>{
+    setHolding(false);
+    setHoldProgress(0);
+    if(holdTimer.current) clearInterval(holdTimer.current);
+  };
+
+  const moves=[
+    {from:"A09-L14-L1",to:"A02-R03-L1",sku:"Afwasmiddel 500ml",reason:"67 picks/wk, was 58m van depot → 12m",cat:"Huishoudelijk"},
+    {from:"A11-R08-L1",to:"A01-L07-L1",sku:"Chips Paprika 200g",reason:"54 picks/wk, was 72m van depot → 8m",cat:"Food"},
+    {from:"A10-L19-L1",to:"A03-R01-L1",sku:"Shampoo Argan 300ml",reason:"48 picks/wk, was 65m van depot → 15m",cat:"Beauty"},
+    {from:"A02-L04-L1",to:"A12-R11-L1",sku:"Riem Leder Bruin",reason:"2 picks/wk, premium locatie vrijmaken",cat:"Kleding"},
+    {from:"A01-R09-L1",to:"A14-L06-L1",sku:"Kunstbloem Roos",reason:"1 pick/wk, premium locatie vrijmaken",cat:"Decoratie"},
+  ];
+
+  // Confirmed state — don't replace panel, toaster is shown separately
+
+
+  return(
+    <div style={{width:420,minHeight:"100%",background:"var(--bg-surface)",borderLeft:"1px solid var(--border-light)",overflow:"auto",animation:"slideInRight 0.3s var(--ease-out)",padding:"24px",boxShadow:"-4px 0 16px rgba(0,0,0,0.2)"}}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+        <div>
+          <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Herslotting voorstel</div>
+          <div style={{fontSize:12,color:"var(--text-secondary)"}}>{moves.length} verplaatsingen · {suboptimalCount} locaties betrokken</div>
+        </div>
+        <button onClick={onCancel} style={{width:28,height:28,borderRadius:"var(--radius-sm)",border:"1px solid var(--border-light)",background:"var(--bg-subtle)",color:"var(--text-secondary)",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+      </div>
+
+      {/* Impact summary */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
+        <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:12}}>
+          <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>Loopafstand besparing</div>
+          <div style={{fontSize:20,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>-1.840m</div>
+          <div style={{fontSize:10,color:"var(--text-tertiary)"}}>per dag</div>
+        </div>
+        <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:12}}>
+          <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>Picks/uur verbetering</div>
+          <div style={{fontSize:20,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>+12%</div>
+          <div style={{fontSize:10,color:"var(--text-tertiary)"}}>geschat</div>
+        </div>
+      </div>
+
+      {/* Movement list */}
+      <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10,fontWeight:600}}>Voorgestelde verplaatsingen</div>
+      {moves.map((m,i)=>(
+        <div key={i} style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:12,marginBottom:8,animation:`fadeInUp 0.3s var(--ease-out) ${i*0.05}s backwards`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <span style={{fontSize:12,fontWeight:600}}>{m.sku}</span>
+            <span style={{fontSize:10,color:"var(--text-tertiary)",background:"var(--bg-elevated)",padding:"2px 8px",borderRadius:"var(--radius-full)"}}>{m.cat}</span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+            <span style={{fontSize:11,fontFamily:"var(--font-mono)",color:"var(--accent-red)"}}>{m.from}</span>
+            <span style={{fontSize:11,color:"var(--text-tertiary)"}}>→</span>
+            <span style={{fontSize:11,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>{m.to}</span>
+          </div>
+          <div style={{fontSize:10,color:"var(--text-tertiary)"}}>{m.reason}</div>
+        </div>
+      ))}
+
+      {/* Hold to Slot button */}
+      <div style={{marginTop:20,position:"sticky",bottom:0,paddingTop:16,paddingBottom:8,background:"var(--bg-surface)"}}>
+        <button
+          onPointerDown={startHold}
+          onPointerUp={cancelHold}
+          onPointerLeave={cancelHold}
+          style={{
+            width:"100%",height:52,borderRadius:"var(--radius-md)",border:"2px solid",
+            borderColor:holding?"var(--accent-green)":"var(--border-medium)",
+            cursor:"pointer",
+            background:holding?`linear-gradient(90deg, rgba(54,216,158,0.25) ${holdProgress}%, var(--bg-elevated) ${holdProgress}%)`:"var(--bg-elevated)",
+            color:holding?"var(--accent-green)":"var(--text-primary)",
+            fontSize:14,fontWeight:700,
+            transition:holding?"none":"all 0.2s ease",
+            position:"relative",overflow:"hidden",
+            userSelect:"none",
+            touchAction:"none",
+          }}
+        >
+          {holding?`${Math.round(holdProgress)}% — Blijf vasthouden...`:"⏎ Houd ingedrukt om naar WMS te sturen"}
+        </button>
+        <div style={{fontSize:10,color:"var(--text-tertiary)",textAlign:"center",marginTop:8}}>
+          Verplaatsingsinstructies worden direct naar het WMS verzonden
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══ CONFIRMATION TOASTER — celebration style, top right ═══ */
+function ConfirmToaster({onDone}:{onDone:()=>void}){
+  useEffect(()=>{const t=setTimeout(onDone,6000);return()=>clearTimeout(t);},[onDone]);
+  // Generate confetti particles
+  const confetti=useRef(Array.from({length:24},(_,i)=>({
+    x:50+Math.random()*200-100,
+    y:-20-Math.random()*60,
+    rot:Math.random()*360,
+    color:["#ff5c7c","#ffb340","#4da8ff","#36d89e","#8b6fff","#ffbe30"][i%6],
+    size:4+Math.random()*6,
+    delay:Math.random()*0.5,
+    dur:1.5+Math.random()*1,
+  })));
+  return(
+    <div style={{position:"fixed",top:20,right:20,zIndex:200,animation:"toasterIn 0.5s var(--ease-out)"}}>
+      <div style={{width:320,padding:"24px",borderRadius:"var(--radius-lg)",background:"var(--bg-surface)",border:"1px solid rgba(54,216,158,0.25)",boxShadow:"0 12px 48px rgba(0,0,0,0.5), 0 0 30px rgba(54,216,158,0.08)",position:"relative",overflow:"hidden"}}>
+        {/* Confetti */}
+        {confetti.current.map((c,i)=>(
+          <div key={i} style={{
+            position:"absolute",left:`calc(50% + ${c.x}px)`,top:c.y,
+            width:c.size,height:c.size*0.6,borderRadius:1,
+            background:c.color,opacity:0.9,
+            transform:`rotate(${c.rot}deg)`,
+            animation:`confettiFall ${c.dur}s ease-in ${c.delay}s forwards`,
+          }}/>
+        ))}
+        {/* Content */}
+        <div style={{textAlign:"center",position:"relative",zIndex:1}}>
+          <div style={{width:56,height:56,borderRadius:"50%",background:"rgba(54,216,158,0.12)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",animation:"checkPop 0.5s var(--ease-out) 0.15s backwards"}}>
+            <span style={{fontSize:28,color:"var(--accent-green)"}}>✓</span>
+          </div>
+          <div style={{fontSize:16,fontWeight:800,color:"var(--text-primary)",marginBottom:6}}>Herslotting bevestigd</div>
+          <div style={{fontSize:13,color:"var(--accent-green)",fontWeight:600,marginBottom:4}}>5 verplaatsingen verzonden</div>
+          <div style={{fontSize:12,color:"var(--text-secondary)",marginBottom:16}}>Verwachte besparing: 1.840m/dag</div>
+          <div style={{fontSize:11,color:"var(--text-tertiary)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+            <span style={{width:6,height:6,borderRadius:"50%",background:"var(--accent-green)",animation:"pulse 1s ease infinite"}}/>
+            WMS instructies worden verwerkt
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══ TOOLTIP ═══ */
+function Tip({loc,x,y}:{loc:Loc;x:number;y:number}){
+  return(
+    <div style={{position:"fixed",left:x+14,top:y-8,background:"#1e2030",border:"1px solid rgba(255,255,255,0.12)",borderRadius:"var(--radius-md)",padding:"14px 18px",minWidth:250,boxShadow:"0 8px 32px rgba(0,0,0,0.6)",zIndex:1000,animation:"tooltipPop 0.15s var(--ease-out)",pointerEvents:"none"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <span style={{fontFamily:"var(--font-mono)",fontSize:12,fontWeight:600}}>{loc.id}</span>
+        <span style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:"var(--radius-full)",background:VCOL[loc.velocity],color:"#fff"}}>{loc.velocity==="empty"?"Leeg":`${loc.velocity}-class`}</span>
+      </div>
+      {loc.skuName&&<div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{loc.skuName}</div>}
+      {loc.category&&<div style={{fontSize:11,color:"var(--text-tertiary)",marginBottom:10}}>{loc.category}</div>}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 20px"}}>
+        {[{label:"Picks/week",val:String(loc.picksWeek),color:loc.picksWeek>50?"var(--velocity-a)":"var(--text-primary)"},{label:"Afstand depot",val:`${loc.depotDist}m`,color:"var(--text-primary)"},{label:"Laatste pick",val:loc.lastPicked??"—",color:"var(--text-secondary)"},{label:"Efficiëntie",val:`${loc.efficiency}%`,color:loc.efficiency>70?"var(--accent-green)":loc.efficiency<35?"var(--accent-red)":"var(--accent-amber)"}].map((m,i)=>(
+          <div key={i}><div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:2}}>{m.label}</div><div style={{fontSize:13,fontWeight:600,fontFamily:"var(--font-mono)",color:m.color}}>{m.val}</div></div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══ DETAIL PANEL ═══ */
+function Detail({loc,onClose}:{loc:Loc;onClose:()=>void}){
+  const r=rng(loc.id.charCodeAt(3)*100+loc.position);
+  return(
+    <div style={{width:380,minHeight:"100%",background:"var(--bg-surface)",borderLeft:"1px solid var(--border-light)",overflow:"auto",animation:"slideInRight 0.3s var(--ease-out)",padding:"24px",boxShadow:"-4px 0 16px rgba(0,0,0,0.2)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+        <div>
+          <div style={{fontFamily:"var(--font-mono)",fontSize:15,fontWeight:700,marginBottom:6}}>{loc.id}</div>
+          <span style={{fontSize:11,fontWeight:600,padding:"3px 12px",borderRadius:"var(--radius-full)",background:VCOL[loc.velocity],color:"#fff"}}>{loc.velocity}-class · {loc.category}</span>
+        </div>
+        <button onClick={onClose} style={{width:28,height:28,borderRadius:"var(--radius-sm)",border:"1px solid var(--border-light)",background:"var(--bg-subtle)",color:"var(--text-secondary)",cursor:"pointer",fontSize:14,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+      </div>
+      {loc.skuName&&<div style={{background:"var(--bg-card)",borderRadius:"var(--radius-md)",padding:16,marginBottom:16}}><div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Product</div><div style={{fontSize:15,fontWeight:600,marginBottom:3}}>{loc.skuName}</div><div style={{fontSize:11,color:"var(--text-tertiary)",fontFamily:"var(--font-mono)"}}>{loc.skuId}</div></div>}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        {[{label:"Picks / week",val:String(loc.picksWeek),color:loc.picksWeek>50?"var(--velocity-a)":"var(--text-primary)"},{label:"Picks / maand",val:String(loc.picksMonth),color:"var(--text-primary)"},{label:"Afstand depot",val:`${loc.depotDist}m`,color:loc.depotDist>60?"var(--accent-red)":"var(--accent-green)"},{label:"Efficiëntie",val:`${loc.efficiency}%`,color:loc.efficiency>70?"var(--accent-green)":loc.efficiency<35?"var(--accent-red)":"var(--accent-amber)"}].map((m,i)=>(
+          <div key={i} style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:"12px 14px"}}><div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>{m.label}</div><div style={{fontSize:22,fontWeight:700,fontFamily:"var(--font-mono)",color:m.color,letterSpacing:"-0.02em"}}>{m.val}</div></div>
+        ))}
+      </div>
+      <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-md)",padding:16,marginBottom:16}}>
+        <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Pick frequentie — 4 weken</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:2,height:56}}>
+          {Array.from({length:28},(_,i)=>{const h=Math.max(3,r()*56*(loc.velocity==="A"?1:loc.velocity==="B"?0.5:0.2));return<div key={i} style={{flex:1,height:h,borderRadius:2,background:i>=21?"var(--velocity-a)":"var(--accent-purple)",opacity:i>=21?0.85:0.25}}/>;
+          })}
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"var(--text-tertiary)",marginTop:6}}><span>4w</span><span>3w</span><span>2w</span><span>1w</span><span>Nu</span></div>
+      </div>
+      <div style={{background:loc.efficiency<35?"rgba(255,92,108,0.08)":"rgba(54,216,158,0.08)",borderRadius:"var(--radius-md)",padding:16,marginBottom:16,border:`1px solid ${loc.efficiency<35?"rgba(255,92,108,0.15)":"rgba(54,216,158,0.15)"}`}}>
+        <div style={{fontSize:12,fontWeight:600,marginBottom:4,color:loc.efficiency<35?"var(--accent-red)":"var(--accent-green)"}}>{loc.efficiency<35?"⚠ Suboptimale plaatsing":"✓ Efficiënte plaatsing"}</div>
+        <div style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.6}}>{loc.efficiency<35&&loc.velocity==="A"?`Dit A-class product wordt ${loc.picksWeek}×/week gepickt maar staat ${loc.depotDist}m van het depot. Verplaatsing naar A01-A03 bespaart ~${Math.round(loc.depotDist*0.7*loc.picksWeek)}m loopafstand per week.`:loc.efficiency<35?"Product staat te ver van depot voor zijn pickfrequentie.":"Locatie is correct ingedeeld voor de huidige pickfrequentie."}</div>
+      </div>
+      <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-md)",padding:16}}>
+        <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Vaak samen gepickt met</div>
+        {["Afwasmiddel 500ml","WC-Reiniger","Schoonmaakdoekjes 80st"].map((n,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:i<2?"1px solid var(--border-light)":"none",fontSize:12}}>
+            <span style={{fontWeight:500}}>{n}</span>
+            <span style={{fontSize:10,fontWeight:600,color:"var(--text-tertiary)",fontFamily:"var(--font-mono)",background:"var(--bg-elevated)",padding:"2px 8px",borderRadius:"var(--radius-full)"}}>{85-i*12}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══ PROBLEMS ═══ */
+function Problems(){
+  const sevColor={critical:"var(--accent-red)",warning:"var(--accent-amber)",info:"var(--accent-purple)"};
+  return(
+    <div style={{position:"absolute",bottom:16,left:20,right:20,background:"var(--bg-elevated)",border:"1px solid var(--border-medium)",borderRadius:"var(--radius-lg)",padding:"14px 20px",boxShadow:"var(--shadow-lg)",animation:"slideUp 0.4s var(--ease-out) 0.3s backwards",maxHeight:160,overflow:"auto"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><span style={{fontSize:13,fontWeight:700}}>Gedetecteerde problemen</span><span style={{background:"var(--accent-red)",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:"var(--radius-full)"}}>5</span></div>
+      {PROBLEMS.map((p,i)=>(
+        <div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"5px 0",borderBottom:i<PROBLEMS.length-1?"1px solid var(--border-light)":"none"}}>
+          <span style={{width:6,height:6,borderRadius:"50%",marginTop:6,flexShrink:0,background:sevColor[p.sev]}}/>
+          <span style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.5}}>{p.msg}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ═══ LEGEND ═══ */
+function Legend(){
+  return(
+    <div style={{position:"absolute",top:72,right:16,background:"var(--bg-elevated)",border:"1px solid var(--border-medium)",borderRadius:"var(--radius-md)",padding:"12px 16px",boxShadow:"var(--shadow-md)",fontSize:11,animation:"fadeInUp 0.3s var(--ease-out) 0.15s backwards"}}>
+      <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8,fontWeight:600}}>Velocity</div>
+      {([["A","Snellopers"],["B","Frequent"],["C","Normaal"],["D","Langzaam"]]as const).map(([v,label])=>(
+        <div key={v} style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}><span style={{width:10,height:10,borderRadius:3,background:VCOL[v as Velocity]}}/><span style={{color:"var(--text-secondary)",fontWeight:450}}>{label}</span></div>
+      ))}
+    </div>
+  );
+}
+
+/* ═══ PAGE ═══ */
+export default function WarehousePage(){
+  const[active,setActive]=useState("warehouse");
+  const[level,setLevel]=useState(0);
+  const[hovered,setHovered]=useState<{loc:Loc;x:number;y:number}|null>(null);
+  const[selected,setSelected]=useState<Loc|null>(null);
+  const[showProposal,setShowProposal]=useState(false);
+  const[showConfirmToast,setShowConfirmToast]=useState(false);
+  const[shouldClearSuboptimal,setShouldClearSuboptimal]=useState(false);
+  const onHover=useCallback((l:Loc|null,x:number,y:number)=>{setHovered(l?{loc:l,x,y}:null);},[]);
+
+  return(
+    <div style={{display:"flex",height:"100vh",overflow:"hidden",position:"relative"}}>
+      {/* Ambient orbs */}
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
+        <div style={{position:"absolute",width:900,height:900,top:"-20%",left:"-10%",background:"radial-gradient(circle, rgba(139,111,255,0.55) 0%, rgba(139,111,255,0.15) 45%, transparent 70%)",borderRadius:"50%",filter:"blur(40px)",animation:"orbFloat1 20s ease-in-out infinite"}}/>
+        <div style={{position:"absolute",width:800,height:800,bottom:"-15%",right:"-5%",background:"radial-gradient(circle, rgba(255,92,124,0.45) 0%, rgba(255,92,124,0.12) 45%, transparent 70%)",borderRadius:"50%",filter:"blur(40px)",animation:"orbFloat2 25s ease-in-out infinite"}}/>
+        <div style={{position:"absolute",width:700,height:700,top:"30%",left:"45%",background:"radial-gradient(circle, rgba(77,168,255,0.35) 0%, rgba(77,168,255,0.10) 45%, transparent 70%)",borderRadius:"50%",filter:"blur(40px)",animation:"orbFloat3 28s ease-in-out infinite"}}/>
+      </div>
+      <Sidebar active={active} onChange={setActive}/>
+      <div style={{flex:1,display:"flex",flexDirection:"column",position:"relative"}}>
+        <div style={{height:54,background:"var(--bg-surface)",borderBottom:"1px solid var(--border-medium)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",animation:"fadeIn 0.3s var(--ease-out) backwards"}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <span style={{fontSize:14,fontWeight:700}}>DC Echt</span>
+            <span style={{fontSize:11,color:"var(--text-tertiary)",fontWeight:500,background:"var(--bg-card)",padding:"4px 12px",borderRadius:"var(--radius-full)",fontFamily:"var(--font-mono)"}}>3.000 locaties · 15 gangpaden · 5 niveaus</span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:11,color:"var(--text-tertiary)",marginRight:4,fontWeight:500}}>Niveau:</span>
+            {[1,2,3,4,5].map(l=>(
+              <button key={l} onClick={()=>setLevel(l===level?0:l)} style={{width:30,height:30,borderRadius:"var(--radius-sm)",border:`1.5px solid ${level===l?"var(--accent-purple)":"var(--border-medium)"}`,background:level===l?"var(--accent-purple)":"var(--bg-surface)",color:level===l?"#fff":"var(--text-secondary)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-mono)",boxShadow:level===l?"var(--shadow-glow-purple)":"none",transition:"all 0.15s ease"}}>{l}</button>
+            ))}
+            <button onClick={()=>setLevel(0)} style={{height:30,padding:"0 14px",borderRadius:"var(--radius-sm)",border:`1.5px solid ${level===0?"var(--accent-purple)":"var(--border-medium)"}`,background:level===0?"var(--accent-purple)":"var(--bg-surface)",color:level===0?"#fff":"var(--text-secondary)",fontSize:11,fontWeight:600,cursor:"pointer",boxShadow:level===0?"var(--shadow-glow-purple)":"none",transition:"all 0.15s ease"}}>Alle</button>
+          </div>
+        </div>
+        <div style={{flex:1,display:"flex",position:"relative",overflow:"hidden"}}>
+          <Map level={level} onHover={onHover} onSelect={setSelected} onShowProposal={()=>{setShowProposal(true);setSelected(null);}} clearSuboptimal={shouldClearSuboptimal}/>
+          {showProposal&&<ReslotProposal suboptimalCount={20} onConfirm={()=>{setShowProposal(false);setShowConfirmToast(true);setShouldClearSuboptimal(true);}} onCancel={()=>setShowProposal(false)}/>}
+          {selected&&!showProposal&&<Detail loc={selected} onClose={()=>setSelected(null)}/>}
+        </div>
+        {hovered&&<Tip loc={hovered.loc} x={hovered.x} y={hovered.y}/>}
+        <Legend/>
+      </div>
+      {showConfirmToast&&<ConfirmToaster onDone={()=>setShowConfirmToast(false)}/>}
     </div>
   );
 }
