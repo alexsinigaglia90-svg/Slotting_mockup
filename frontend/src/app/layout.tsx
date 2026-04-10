@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Action Warehouse Slotting",
@@ -27,7 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </aside>
-        <main className="flex-1 min-h-screen overflow-auto">{children}</main>
+        <main className="flex-1 min-h-screen overflow-auto">
+          <Providers>{children}</Providers>
+        </main>
       </body>
     </html>
   );
