@@ -32,7 +32,22 @@ class OptimizeResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str = "ok"
-    version: str = "0.2.0"
+    version: str = "1.0.0"
+
+
+class ImportErrorResponse(BaseModel):
+    row: int
+    column: str
+    message: str
+
+
+class ImportResponse(BaseModel):
+    rows_imported: int
+    rows_skipped: int
+    errors: list[ImportErrorResponse]
+    num_skus: int
+    num_locations: int
+    status: str  # "success" | "partial" | "failed"
 
 
 class PickRouteRequest(BaseModel):

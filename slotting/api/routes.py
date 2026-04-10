@@ -1,11 +1,16 @@
 """API route definitions for the slotting engine."""
 
-from fastapi import APIRouter, HTTPException
+import tempfile
+
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from pathlib import Path as FilePath
 
 from slotting.api.schemas import (
-    HealthResponse, OptimizeRequest, OptimizeResponse,
+    HealthResponse, ImportErrorResponse, ImportResponse,
+    OptimizeRequest, OptimizeResponse,
     PickRouteRequest, PickRouteResponse, ScoreResponse,
 )
+from slotting.io.importer import import_csv, ImportValidationError
 from slotting.engine.optimizer import SlottingOptimizer
 from slotting.engine.pick_route import PickRouteSolver
 from slotting.engine.types import SlottingAssignment
@@ -85,4 +90,44 @@ def pick_route(request: PickRouteRequest):
         total_distance=result.total_distance,
         aisles_visited=result.aisles_visited,
         heuristic=result.heuristic,
+    )
+
+
+@router.post("/import", response_model=ImportResponse)
+async def import_data(file: UploadFile = File(...)):
+    if not file.filename or not file.filename.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only CSV files are accepted")
+
+    content = await file.read()
+    if not content.strip():
+        raise HTTPException(status_code=400, detail="File is empty")
+
+    with tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = FilePath(tmp.name)
+
+    try:
+        result = import_csv(tmp_path)
+    except ImportValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+    _state["imported_skus"] = result.skus
+    _state["imported_locations"] = result.locations
+
+    if result.rows_imported == 0:
+        status = "failed"
+    elif result.rows_skipped > 0:
+        status = "partial"
+    else:
+        status = "success"
+
+    return ImportResponse(
+        rows_imported=result.rows_imported,
+        rows_skipped=result.rows_skipped,
+        errors=[ImportErrorResponse(row=e.row, column=e.column, message=e.message) for e in result.errors],
+        num_skus=len(result.skus),
+        num_locations=len(result.locations),
+        status=status,
     )

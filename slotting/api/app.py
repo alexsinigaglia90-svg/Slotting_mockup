@@ -10,7 +10,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Action Warehouse Slotting API",
         description="AI-driven warehouse slotting optimization engine",
-        version="0.2.0",
+        version="1.0.0",
     )
     app.add_middleware(
         CORSMiddleware,
