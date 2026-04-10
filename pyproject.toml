@@ -1,0 +1,21 @@
+[project]
+name = "action-slotting"
+version = "0.1.0"
+description = "AI-driven warehouse slotting module for Action"
+requires-python = ">=3.12"
+dependencies = [
+    "networkx>=3.2",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["slotting*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
