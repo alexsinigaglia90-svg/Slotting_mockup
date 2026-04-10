@@ -16,6 +16,9 @@ node_modules/
 .next/
 dist/
 
+# Claude local
+.claude/
+
 # Environment
 .env
 .env.local
