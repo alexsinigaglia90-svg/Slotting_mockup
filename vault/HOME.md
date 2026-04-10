@@ -69,6 +69,29 @@
 ### Key Result
 **82.4% reductie in gemiddelde loopafstand** (159.2m → 28.0m per order) — bewezen in integration tests.
 
+## Sprint 3 Deliverables
+
+### Research Notes
+- [[research/visualization/warehouse-3d-rendering|3D Warehouse Rendering Best Practices]]
+- [[research/operations/opex-kpi-framework|Opex KPI Framework]]
+
+### Frontend Components (Next.js 14 + React Three Fiber)
+- `frontend/src/components/warehouse-3d/warehouse-scene.tsx` — 3D warehouse met 3000 instanced racks
+- `frontend/src/components/warehouse-3d/pick-route-line.tsx` — Geanimeerde pick-route lijnen
+- `frontend/src/components/warehouse-2d/warehouse-2d.tsx` — 2D top-down analytische view
+- `frontend/src/app/opex/page.tsx` — Opex dashboard met KPI cards, FTE calculator, ROI
+- `frontend/src/context/slotting-context.tsx` — State management met useReducer
+- `frontend/src/lib/warehouse-geometry.ts` — 3D positie-berekeningen voor 3000 locaties
+- `frontend/src/lib/color-scales.ts` — Velocity/zone kleurschalen
+- `frontend/src/lib/api.ts` — TypeScript API client
+
+### Key Features
+- 3D/2D dual-view warehouse visualisatie met velocity heatmap
+- Instanced rendering (1-3 draw calls voor 3000 racks, 60fps)
+- Live optimization via API met before/after vergelijking
+- Opex dashboard met configureerbare parameters (FTE, kosten, ROI)
+- Dark theme, professionele AAA-grade look
+
 ## Beslissingen
 - Iteratieve spiraal aanpak: research en bouw versterken elkaar per sprint
 - Synthetische data eerst, ontwerp klaar voor echte Action-data later
