@@ -12,14 +12,7 @@ import {
   RACK_DEPTH,
 } from "@/lib/warehouse-geometry";
 import { DEFAULT_WAREHOUSE_CONFIG } from "@/lib/types";
-
-const VELOCITY_COLORS: Record<string, string> = {
-  A: "#ef4444",
-  B: "#eab308",
-  C: "#60a5fa",
-  D: "#3b82f6",
-  default: "#374151",
-};
+import { getVelocityClass, VELOCITY_COLORS } from "@/lib/color-scales";
 
 function InstancedRacks() {
   const meshRef = useRef<THREE.InstancedMesh>(null);
@@ -32,13 +25,14 @@ function InstancedRacks() {
     const matrix = new THREE.Matrix4();
     const color = new THREE.Color();
 
+    const config = DEFAULT_WAREHOUSE_CONFIG;
     positions.forEach((pos, i) => {
       matrix.setPosition(pos.worldX, pos.worldY, pos.worldZ);
       mesh.setMatrixAt(i, matrix);
 
-      // Default color based on level (darker = higher)
-      const brightness = 1 - (pos.level - 1) * 0.15;
-      color.setRGB(0.22 * brightness, 0.25 * brightness, 0.32 * brightness);
+      // Color based on velocity class (aisle distance + level)
+      const vel = getVelocityClass(pos.aisleIndex, pos.level, config.numAisles);
+      color.set(VELOCITY_COLORS[vel]);
       mesh.setColorAt(i, color);
     });
 
