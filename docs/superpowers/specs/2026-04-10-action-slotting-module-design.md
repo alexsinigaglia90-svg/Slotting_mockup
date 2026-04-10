@@ -23,7 +23,7 @@ Het volledige pick-optimalisatieverhaal:
 - **Secundair:** Hybride setups (man-to-goods + geautomatiseerde zones)
 
 ### Tech Stack
-- **Frontend:** React / Next.js
+- **Frontend:** React / Next.js / React Three Fiber (Three.js)
 - **Backend:** Python (FastAPI)
 - **Wetenschappelijke libraries:** scipy, networkx, OR-Tools
 - **AI:** Hybride ML (forecasting, clustering) + OR (optimalisatie, routing)
@@ -99,8 +99,17 @@ Research en bouw in afwisselende sprints die elkaar versterken. Elk sub-project 
 - WebSocket voor real-time voortgang bij optimalisatie-runs
 
 ### Laag 4 — Presentation Layer (Next.js/React)
-- Interactieve Warehouse Map: 2D top-down view, heatmaps, drag-and-drop overrides
-- Simulatie Engine: before/after visualisatie met geanimeerde pick-routes
+- **3D Warehouse View (React Three Fiber / Three.js):**
+  - Isometrische 3D view als hero visual — stellingen met alle hoogte-niveaus zichtbaar
+  - Vrije camera: draaien, zoomen, fly-through langs pick-routes
+  - Kleurgecodeerde stellingen (velocity, zone, categorie)
+  - Geanimeerde pick-route visualisatie in 3D
+- **2D Top-Down View (toggle):**
+  - Analytische modus voor heatmaps, zone-indelingen, route-overlays
+  - Drag-and-drop voor handmatige overrides
+  - Scenario vergelijking side-by-side
+- **Dual-view filosofie:** 3D voor de wow en presentatie, 2D voor analyse en interactie
+- Simulatie Engine: before/after visualisatie met geanimeerde pick-routes (beide views)
 - Opex Dashboard: KPI's, trendgrafieken, FTE impact calculator, ROI projectie
 - Scenario Vergelijker: meerdere optimalisatie-scenario's draaien en vergelijken
 
@@ -173,7 +182,7 @@ Warehouse Layout + SKU Data → OR Motor → Optimale Slotting + Pick Routes
 
 | Onderwerp | Zoekrichting | Output |
 |-----------|-------------|--------|
-| Warehouse visualisatie | Best practices 2D warehouse maps, heatmaps, route-animatie | Design patterns note |
+| Warehouse visualisatie | Best practices 3D warehouse rendering (Three.js/R3F), 2D analytische views, heatmaps, route-animatie | Design patterns note |
 | Opex KPI's | KPI's die warehouse managers overtuigen | KPI-framework note |
 
 ### Bronnen
@@ -193,14 +202,15 @@ Elke paper/bron krijgt: **samenvatting, key findings, relevantie voor project, i
 - Status overview: huidige slotting score, laatste optimalisatie-run, verbeterpotentieel
 
 ### Flow 1 — "Analyseer mijn warehouse"
-1. Warehouse map laadt met huidige SKU-plaatsing (kleurgecodeerd op velocity: rood=snelloper, blauw=langzaamloper)
-2. Heatmap overlay toont hotspots (overbelaste gangpaden, inefficiënte plaatsingen)
-3. Automatische detectie van problemen: "SKU X is een A-product maar staat achteraan in gangpad 14"
+1. 3D warehouse view laadt als hero visual — stellingen met kleurgecodeerde SKU's op alle niveaus (rood=snelloper, blauw=langzaamloper)
+2. Fly-through camera laat automatisch de probleemgebieden zien
+3. Toggle naar 2D voor heatmap overlay met hotspots (overbelaste gangpaden, inefficiënte plaatsingen)
+4. Automatische detectie van problemen: "SKU X is een A-product maar staat achteraan in gangpad 14, niveau 5"
 
 ### Flow 2 — "Optimaliseer"
 1. Klik "Run Optimization" — progressbar toont de engine aan het werk
 2. Resultaat: nieuw slotting-voorstel op de warehouse map (side-by-side of toggle old/new)
-3. **De killer visual:** geanimeerde pick-route vergelijking — dezelfde order gepickt met oude vs. nieuwe slotting. De route wordt visueel korter, de tijdsbalk krimpt.
+3. **De killer visual:** geanimeerde 3D pick-route vergelijking — een virtuele picker loopt dezelfde order met oude vs. nieuwe slotting. De route wordt visueel korter, de tijdsbalk krimpt. Camera volgt de picker door de gangpaden.
 4. Samenvatting: "Gemiddelde loopafstand -32%, picks/uur +28%, geschatte jaarlijkse besparing: EUR X"
 
 ### Flow 3 — "What-if scenario's"
@@ -216,8 +226,9 @@ Elke paper/bron krijgt: **samenvatting, key findings, relevantie voor project, i
 
 ### Overtuigingskracht
 - Concreet: echte (of echt-lijkende) productnamen, gangpadnummers, eurobedragen
-- Beweging: geanimeerde routes, real-time herberekening
-- Aha-moment: side-by-side route-animatie — dezelfde order, halve looptijd
+- Beweging: 3D fly-throughs, geanimeerde picker-routes, real-time herberekening
+- Aha-moment: 3D split-screen — links de oude route (lang, chaotisch), rechts de nieuwe (kort, efficiënt), dezelfde order, halve looptijd
+- Hoogte-dimensie: snellopers op grijphoogte zichtbaar, langzaamlopers boven — direct herkenbaar voor warehouse managers
 
 ---
 
