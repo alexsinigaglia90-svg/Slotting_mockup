@@ -44,6 +44,31 @@
 - `slotting/generators/` — Synthetische data generators (warehouse, SKU, orders)
 - `slotting/io/export.py` — JSON/CSV export
 
+## Sprint 2 Deliverables
+
+### Research Notes
+- [[research/ml/demand-forecasting-comparison|Demand Forecasting Comparison]]
+- [[research/ml/sku-affinity-analysis|SKU Affinity Analysis]]
+- [[research/ml/correlated-slotting|Correlated Slotting]]
+- [[research/algorithms/metaheuristics-slotting|Metaheuristics for Slotting]]
+- [[research/operations/order-batching-strategies|Order Batching Strategies]]
+
+### Engine Components
+- `slotting/engine/types.py` — SlottingAssignment, SlottingScore, SlottingResult, PickRouteResult
+- `slotting/engine/affinity.py` — SKUAffinityAnalyzer (co-occurrence, Jaccard, Louvain clustering)
+- `slotting/engine/velocity.py` — VelocityClassifier (dynamic ABC+ met seasonal adjustment)
+- `slotting/engine/pick_route.py` — PickRouteSolver (S-shape + largest gap heuristieken)
+- `slotting/engine/evaluator.py` — SlottingEvaluator (score via gesimuleerde pick-routes)
+- `slotting/engine/optimizer.py` — SlottingOptimizer (greedy + local search, 82.4% verbetering)
+
+### API Layer
+- `slotting/api/app.py` — FastAPI application factory
+- `slotting/api/routes.py` — REST endpoints: /health, /optimize, /pick-route
+- `slotting/api/schemas.py` — Pydantic request/response models
+
+### Key Result
+**82.4% reductie in gemiddelde loopafstand** (159.2m → 28.0m per order) — bewezen in integration tests.
+
 ## Beslissingen
 - Iteratieve spiraal aanpak: research en bouw versterken elkaar per sprint
 - Synthetische data eerst, ontwerp klaar voor echte Action-data later
