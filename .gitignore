@@ -1,0 +1,25 @@
+# Obsidian workspace (user-specific, not vault content)
+vault/.obsidian/workspace.json
+vault/.obsidian/workspace-mobile.json
+
+# Superpowers brainstorm sessions
+.superpowers/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+.next/
+dist/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
