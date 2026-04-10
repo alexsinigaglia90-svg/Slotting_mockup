@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 
 const WarehouseScene = dynamic(
@@ -7,6 +8,15 @@ const WarehouseScene = dynamic(
   { ssr: false, loading: () => (
     <div className="w-full h-full flex items-center justify-center bg-[var(--background)]">
       <p className="text-[var(--muted-foreground)]">Loading 3D scene...</p>
+    </div>
+  )}
+);
+
+const Warehouse2D = dynamic(
+  () => import("@/components/warehouse-2d/warehouse-2d"),
+  { ssr: false, loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-[var(--background)]">
+      <p className="text-[var(--muted-foreground)]">Loading 2D view...</p>
     </div>
   )}
 );
@@ -19,18 +29,31 @@ const LEGEND_ITEMS = [
 ];
 
 export default function WarehousePage() {
+  const [viewMode, setViewMode] = useState<"3d" | "2d">("3d");
+
   return (
     <div className="h-screen relative">
-      <WarehouseScene />
+      {viewMode === "3d" ? <WarehouseScene /> : <Warehouse2D />}
       <div className="absolute top-4 right-4 flex gap-2">
-        <button className="px-3 py-1.5 text-xs bg-[var(--card)] border border-[var(--border)] rounded-md hover:bg-[var(--muted)] transition-colors">
-          Isometric
+        <button
+          onClick={() => setViewMode("3d")}
+          className={`px-3 py-1.5 text-xs border border-[var(--border)] rounded-md transition-colors ${
+            viewMode === "3d"
+              ? "bg-[var(--primary)] text-white"
+              : "bg-[var(--card)] hover:bg-[var(--muted)]"
+          }`}
+        >
+          3D View
         </button>
-        <button className="px-3 py-1.5 text-xs bg-[var(--card)] border border-[var(--border)] rounded-md hover:bg-[var(--muted)] transition-colors">
-          Top Down
-        </button>
-        <button className="px-3 py-1.5 text-xs bg-[var(--card)] border border-[var(--border)] rounded-md hover:bg-[var(--muted)] transition-colors">
-          Aisle View
+        <button
+          onClick={() => setViewMode("2d")}
+          className={`px-3 py-1.5 text-xs border border-[var(--border)] rounded-md transition-colors ${
+            viewMode === "2d"
+              ? "bg-[var(--primary)] text-white"
+              : "bg-[var(--card)] hover:bg-[var(--muted)]"
+          }`}
+        >
+          2D Top-Down
         </button>
       </div>
       {/* Velocity color legend */}
