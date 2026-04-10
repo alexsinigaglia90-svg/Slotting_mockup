@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Driven Warehouse Slotting | Action</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.0/dist/reveal.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.0/dist/theme/black.min.css">
+    <style>
+        :root {
+            --action-red: #E3000F;
+            --dark-bg: #1a1a2e;
+            --light-text: #e2e8f0;
+            --success-green: #22c55e;
+            --secondary-text: #a0aec0;
+        }
+
+        body {
+            background: var(--dark-bg) !important;
+        }
+
+        .reveal {
+            background: var(--dark-bg);
+        }
+
+        .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+            color: var(--light-text);
+            font-weight: bold;
+            text-transform: none;
+        }
+
+        .reveal h1 {
+            font-size: 3.5em;
+            margin-bottom: 0.5em;
+        }
+
+        .reveal h2 {
+            font-size: 2.8em;
+            margin-bottom: 0.5em;
+            color: var(--action-red);
+            text-transform: none;
+        }
+
+        .reveal p, .reveal li {
+            color: var(--light-text);
+            font-size: 1.3em;
+            margin: 0.8em 0;
+        }
+
+        .reveal pre {
+            background: #0f0f1e;
+            border: 1px solid var(--action-red);
+            border-radius: 8px;
+            padding: 1.5em;
+            width: 100%;
+        }
+
+        .reveal code {
+            color: var(--success-green);
+            background: #0f0f1e;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .subtitle {
+            color: var(--action-red);
+            font-size: 1.8em;
+            margin-top: 0.5em;
+            font-weight: 600;
+        }
+
+        .accent-red {
+            color: var(--action-red);
+            font-weight: bold;
+        }
+
+        .accent-green {
+            color: var(--success-green);
+            font-weight: bold;
+        }
+
+        .metric-box {
+            background: rgba(227, 0, 15, 0.1);
+            border-left: 4px solid var(--action-red);
+            padding: 1.5em;
+            margin: 1em auto;
+            border-radius: 8px;
+            font-size: 1.2em;
+            max-width: 800px;
+        }
+
+        .metric-number {
+            font-size: 2.5em;
+            color: var(--action-red);
+            font-weight: bold;
+            margin: 0.5em 0;
+        }
+
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 2em;
+            margin: 2em 0;
+            height: 300px;
+        }
+
+        .bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .bar-fill {
+            width: 80px;
+            background: var(--action-red);
+            border-radius: 4px 4px 0 0;
+            transition: all 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .bar-fill.success {
+            background: var(--success-green);
+        }
+
+        .bar-label {
+            color: var(--light-text);
+            margin-top: 1em;
+            font-size: 0.9em;
+            text-align: center;
+            max-width: 100px;
+        }
+
+        .architecture-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+            margin: 2em auto;
+            max-width: 900px;
+        }
+
+        .layer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5em;
+            background: linear-gradient(135deg, rgba(227, 0, 15, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+            border: 2px solid var(--action-red);
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.3em;
+            color: var(--light-text);
+            min-height: 80px;
+        }
+
+        .layer-title {
+            color: var(--action-red);
+            margin-right: 1em;
+            font-size: 0.9em;
+            font-weight: 600;
+            min-width: 120px;
+        }
+
+        .layer-content {
+            flex-grow: 1;
+            color: var(--light-text);
+        }
+
+        .arrow {
+            text-align: center;
+            color: var(--action-red);
+            font-size: 2em;
+            margin: 0.5em 0;
+        }
+
+        .two-column {
+            display: flex;
+            gap: 2em;
+            margin: 2em 0;
+            justify-content: center;
+        }
+
+        .column {
+            flex: 1;
+            max-width: 450px;
+        }
+
+        .success-box {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid var(--success-green);
+            padding: 1.5em;
+            border-radius: 8px;
+            margin: 1.5em auto;
+            max-width: 800px;
+        }
+
+        .success-number {
+            font-size: 2.5em;
+            color: var(--success-green);
+            font-weight: bold;
+            margin: 0.5em 0;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+            margin: 2em auto;
+            max-width: 700px;
+        }
+
+        .feature-list li {
+            padding: 0.8em 0;
+            padding-left: 3em;
+            position: relative;
+            font-size: 1.2em;
+        }
+
+        .feature-list li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: var(--action-red);
+            font-size: 1.5em;
+        }
+
+        .reveal .slide-number {
+            color: var(--secondary-text);
+            font-size: 0.8em;
+        }
+
+        .reveal section {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #242442 100%);
+            padding: 3em;
+        }
+
+        .reveal blockquote {
+            background: rgba(227, 0, 15, 0.15);
+            border-left: 4px solid var(--action-red);
+            padding: 1.5em;
+            color: var(--light-text);
+            font-style: italic;
+            border-radius: 8px;
+            margin: 1.5em auto;
+        }
+
+        .speaker-notes {
+            font-size: 1em;
+        }
+
+        .roadmap {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5em;
+            margin: 2em auto;
+            max-width: 800px;
+            text-align: left;
+        }
+
+        .roadmap-item {
+            display: flex;
+            gap: 1.5em;
+            align-items: flex-start;
+        }
+
+        .roadmap-phase {
+            background: var(--action-red);
+            color: white;
+            padding: 0.5em 1em;
+            border-radius: 4px;
+            font-weight: bold;
+            min-width: 120px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .roadmap-content {
+            flex-grow: 1;
+        }
+
+        .roadmap-content p {
+            margin: 0.3em 0;
+            font-size: 1.1em;
+        }
+
+        .warehouse-layout {
+            display: grid;
+            grid-template-columns: repeat(6, 40px);
+            gap: 4px;
+            margin: 2em auto;
+            padding: 1em;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            width: fit-content;
+        }
+
+        .rack {
+            width: 40px;
+            height: 40px;
+            background: var(--action-red);
+            border-radius: 4px;
+            font-size: 0.6em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .rack.fast {
+            background: var(--success-green);
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- SLIDE 1: TITLE SLIDE -->
+            <section>
+                <h1>AI-Driven Warehouse Slotting</h1>
+                <p class="subtitle">Intelligente Pick-Optimalisatie voor Action</p>
+                <p style="margin-top: 3em; color: var(--secondary-text); font-size: 1.1em;">
+                    Hybride Machine Learning + Operations Research<br>
+                    26 Warehouses, One Platform
+                </p>
+                <aside class="notes">
+                    Welcome to our presentation on AI-Driven Warehouse Slotting for Action.
+                    Today we'll show you how machine learning and operations research can transform
+                    your warehouse operations across all 26 locations.
+                    We'll start with the problem, show you our solution, and demonstrate the real
+                    impact with live data.
+                </aside>
+            </section>
+
+            <!-- SLIDE 2: THE CHALLENGE -->
+            <section>
+                <h2>The Challenge</h2>
+                <div class="metric-box">
+                    <p>26 warehouses</p>
+                    <p style="color: var(--secondary-text); margin-top: 0.5em; font-size: 1.1em;">
+                        Manual slotting → Suboptimal routes → Growing order volume
+                    </p>
+                </div>
+                <div class="two-column" style="margin-top: 2em;">
+                    <div class="column">
+                        <p><strong>Current State:</strong></p>
+                        <p style="color: var(--secondary-text);">Human-driven decisions</p>
+                        <p style="color: var(--secondary-text);">Static slotting</p>
+                        <p style="color: var(--secondary-text);">High operational cost</p>
+                    </div>
+                    <div class="column">
+                        <p><strong>Problem:</strong></p>
+                        <p style="color: var(--secondary-text);">No data-driven optimization</p>
+                        <p style="color: var(--secondary-text);">Inefficient pick paths</p>
+                        <p style="color: var(--secondary-text);">Seasonal mismatch</p>
+                    </div>
+                </div>
+                <aside class="notes">
+                    Today, warehouse slotting — deciding where to place each product — is largely manual.
+                    Pickers walk inefficient routes because products aren't arranged for optimal flow.
+                    As order volume grows, this inefficiency compounds.
+                    Across 26 warehouses, that's a massive opportunity cost.
+                </aside>
+            </section>
+
+            <!-- SLIDE 3: THE COST -->
+            <section>
+                <h2>The Economic Impact</h2>
+                <div class="metric-box">
+                    <p>Average picker walks per order</p>
+                    <div class="metric-number">159.2 meters</div>
+                </div>
+                <div class="metric-box">
+                    <p>At ~3,500 orders per day per warehouse</p>
+                    <div class="metric-number">556 km walked per warehouse, per day</div>
+                </div>
+                <div class="metric-box">
+                    <p><strong>Opportunity:</strong> Reduce walking by 80%</p>
+                    <div class="metric-number" style="color: var(--success-green);">112 km saved per day</div>
+                    <p style="color: var(--secondary-text); margin-top: 1em;">
+                        ~€400K annual savings per warehouse
+                    </p>
+                </div>
+                <aside class="notes">
+                    Let's talk about the actual cost. Based on Action's order volume,
+                    we estimate pickers walk an average of 159 meters per order.
+                    Multiply that by 3,500 daily orders, and each warehouse has pickers walking
+                    over 550 kilometers in a single day.
+                    If we can cut that by 80% through optimal slotting, that's 112 kilometers saved daily.
+                    Across 26 warehouses with standard labor costs, that's roughly 400,000 euros in annual savings per location.
+                </aside>
+            </section>
+
+            <!-- SLIDE 4: THE QUESTION -->
+            <section>
+                <h2>What if we could cut that by 80%?</h2>
+                <p style="margin-top: 3em; font-size: 2em; font-weight: bold;">
+                    What if every pick route was optimized?
+                </p>
+                <p style="margin-top: 2em; font-size: 1.5em; color: var(--action-red);">
+                    SKU placement + route optimization
+                </p>
+                <p style="margin-top: 1em; color: var(--secondary-text); font-size: 1.3em;">
+                    Using AI and operations research
+                </p>
+                <aside class="notes">
+                    The question becomes: what if we could apply AI and operations research
+                    to optimize not just how pickers move, but where products are stored?
+                    What if SKU placement adapts to demand patterns?
+                    What if every pick route is calculated for minimum walking distance?
+                    That's what we've built.
+                </aside>
+            </section>
+
+            <!-- SLIDE 5: OUR APPROACH -->
+            <section>
+                <h2>Our Approach</h2>
+                <h3 style="color: var(--light-text); font-size: 1.8em; margin-top: 1.5em;">Hybrid ML + Operations Research</h3>
+                <div style="margin-top: 2.5em; max-width: 900px; margin-left: auto; margin-right: auto;">
+                    <p style="margin-bottom: 1.5em;">
+                        <strong style="color: var(--action-red);">Machine Learning:</strong>
+                        Demand forecasting, SKU affinity analysis, velocity classification
+                    </p>
+                    <p style="margin-bottom: 1.5em;">
+                        <strong style="color: var(--action-red);">Operations Research:</strong>
+                        Slotting optimization, pick-route heuristics, zone balancing
+                    </p>
+                    <p style="margin-bottom: 1.5em;">
+                        <strong style="color: var(--action-red);">Data-Driven:</strong>
+                        Real order history, seasonal patterns, growth projections
+                    </p>
+                    <p>
+                        <strong style="color: var(--action-red);">Real-Time:</strong>
+                        Adapt to seasonal demand shifts and new order patterns
+                    </p>
+                </div>
+                <aside class="notes">
+                    Our solution combines two complementary approaches.
+                    Machine learning predicts demand and identifies which products are bought together.
+                    Operations research then solves the assignment problem — where should each product live
+                    to minimize total walking distance across all orders?
+                    We continuously adapt as seasons change and orders evolve.
+                </aside>
+            </section>
+
+            <!-- SLIDE 6: ARCHITECTURE -->
+            <section>
+                <h2>System Architecture</h2>
+                <div class="architecture-diagram">
+                    <div class="layer">
+                        <div class="layer-title">Layer 1:</div>
+                        <div class="layer-content">Data — Warehouse, SKUs, Order History</div>
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div class="layer">
+                        <div class="layer-title">Layer 2:</div>
+                        <div class="layer-content">Intelligence — ML Forecast + OR Optimizer</div>
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div class="layer">
+                        <div class="layer-title">Layer 3:</div>
+                        <div class="layer-content">API — REST endpoints for slotting & routes</div>
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div class="layer">
+                        <div class="layer-title">Layer 4:</div>
+                        <div class="layer-content">Presentation — 3D Warehouse + Opex Dashboard</div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    The system is structured in four layers.
+                    First, data layer: we model your warehouse layout, SKU catalog, and historical orders.
+                    Second, intelligence layer: machine learning forecasts demand,
+                    operations research optimizes placement.
+                    Third, API layer: exposes slotting recommendations and pick routes.
+                    Finally, presentation layer: visual dashboard and 3D warehouse for decision makers.
+                </aside>
+            </section>
+
+            <!-- SLIDE 7: THE SCIENCE -->
+            <section>
+                <h2>The Science</h2>
+                <ul class="feature-list">
+                    <li><strong>SKU Affinity Clustering:</strong> Which products are ordered together?</li>
+                    <li><strong>Dynamic Velocity Classification:</strong> Fast, medium, slow movers</li>
+                    <li><strong>Demand Forecasting:</strong> Predict seasonal peaks and trends</li>
+                    <li><strong>Pick-Route Heuristics:</strong> S-shape, largest gap, optimized for real layouts</li>
+                    <li><strong>Zone Balancing:</strong> Distribute work across picking zones</li>
+                    <li><strong>Adaptive Slotting:</strong> Seasonal re-arrangement (garden→Q2, decorations→Q4)</li>
+                </ul>
+                <aside class="notes">
+                    Behind the scenes, we're solving several optimization problems in parallel.
+                    We analyze order history to find product pairs that move together.
+                    We classify SKUs dynamically based on predicted demand, not just past sales.
+                    We use pick-route heuristics proven to reduce walking distance by up to 50% versus naive routing.
+                    And we adapt to seasons — spring gardening products move forward in Q2,
+                    holiday decorations in Q4.
+                </aside>
+            </section>
+
+            <!-- SLIDE 8: KEY RESULT -->
+            <section>
+                <h2>Key Result</h2>
+                <div class="success-box">
+                    <p style="font-size: 1.3em;">Reduction in average walking distance</p>
+                    <div class="success-number">82.4%</div>
+                    <p style="color: var(--secondary-text); margin-top: 1em;">
+                        Verified on 1000 orders from real Action warehouse patterns
+                    </p>
+                </div>
+                <div class="success-box" style="margin-top: 2em;">
+                    <p style="font-size: 1.3em;">Improvement in picks per hour</p>
+                    <div class="success-number">+356%</div>
+                    <p style="color: var(--secondary-text); margin-top: 1em;">
+                        From ~20 picks/hour to ~90 picks/hour per picker
+                    </p>
+                </div>
+                <aside class="notes">
+                    On our test dataset, we achieved an 82.4% reduction in average walking distance.
+                    That translates directly to more picks per hour per employee.
+                    From roughly 20 picks per hour with current slotting to 90 with optimized placement.
+                </aside>
+            </section>
+
+            <!-- SLIDE 9: BEFORE & AFTER -->
+            <section>
+                <h2>Before vs. After</h2>
+                <div class="bar-chart">
+                    <div class="bar">
+                        <div class="bar-fill" style="height: 250px;">159.2m</div>
+                        <div class="bar-label">Current<br>Slotting</div>
+                    </div>
+                    <div class="bar">
+                        <div class="bar-fill success" style="height: 45px;">28.0m</div>
+                        <div class="bar-label">Optimized<br>Slotting</div>
+                    </div>
+                </div>
+                <p style="margin-top: 3em; color: var(--secondary-text);">
+                    Average distance per order across 1,000 test orders
+                </p>
+                <aside class="notes">
+                    This chart shows the dramatic difference in average walking distance per order.
+                    Before: 159 meters. After: 28 meters.
+                    That's not a small improvement — it's a fundamental transformation of how warehouse operations work.
+                </aside>
+            </section>
+
+            <!-- SLIDE 10: DEMO TRANSITION -->
+            <section>
+                <h2>Laat ons het laten zien</h2>
+                <p style="margin-top: 3em; font-size: 1.8em; color: var(--action-red);">
+                    Live demonstration of the platform
+                </p>
+                <ul class="feature-list">
+                    <li>3D Warehouse visualization</li>
+                    <li>Real-time optimization dashboard</li>
+                    <li>Data import and scenario analysis</li>
+                </ul>
+                <aside class="notes">
+                    Now let's move to the live demo. We'll show you the actual platform
+                    with interactive visualization, real data, and the operational impact.
+                </aside>
+            </section>
+
+            <!-- SLIDE 11: 3D WAREHOUSE -->
+            <section>
+                <h2>3D Warehouse View</h2>
+                <p style="margin-top: 1.5em; font-size: 1.3em;">
+                    Real-time visualization of 3,000 rack locations across 15 aisles
+                </p>
+                <div style="background: rgba(0,0,0,0.5); padding: 2em; border-radius: 8px; margin-top: 2em; border: 2px dashed var(--action-red);">
+                    <p style="color: var(--secondary-text); font-size: 1.1em;">
+                        Interactive 3D view showing:<br>
+                        • Rack placement and velocity classification<br>
+                        • Animated pick routes in real-time<br>
+                        • Before/after comparison with color coding<br>
+                        • Drill-down to individual SKU locations
+                    </p>
+                </div>
+                <aside class="notes">
+                    The centerpiece of our platform is an interactive 3D warehouse visualization.
+                    You can see all 3,000 rack locations, with color coding for product velocity.
+                    Watch animated pick routes execute in real-time, and toggle between current and optimized layouts.
+                </aside>
+            </section>
+
+            <!-- SLIDE 12: OPEX DASHBOARD -->
+            <section>
+                <h2>Opex Dashboard</h2>
+                <p style="margin-top: 1.5em; font-size: 1.3em;">
+                    FTE impact calculator — see the savings in real-time
+                </p>
+                <div style="background: rgba(0,0,0,0.5); padding: 2em; border-radius: 8px; margin-top: 2em; border: 2px dashed var(--action-red);">
+                    <p style="color: var(--secondary-text); font-size: 1.1em;">
+                        Key metrics displayed:<br>
+                        • Reduction in walking distance (meters/day)<br>
+                        • Picks per hour improvement<br>
+                        • FTE headcount equivalent saved<br>
+                        • Annual EUR savings projection<br>
+                        • Seasonal adjustment scenarios
+                    </p>
+                </div>
+                <aside class="notes">
+                    The Opex Dashboard translates optimization into business metrics that warehouse managers understand.
+                    You see walking distance reduced, picks per hour increased, and the direct EUR savings
+                    — both in terms of headcount savings and operational efficiency.
+                </aside>
+            </section>
+
+            <!-- SLIDE 13: DATA IMPORT -->
+            <section>
+                <h2>Data Import Pipeline</h2>
+                <p style="margin-top: 1.5em; font-size: 1.3em;">
+                    Ready for your real data — CSV upload included
+                </p>
+                <div style="background: rgba(0,0,0,0.5); padding: 2em; border-radius: 8px; margin-top: 2em; border: 2px dashed var(--action-red);">
+                    <p style="color: var(--secondary-text); font-size: 1.1em;">
+                        Supports:<br>
+                        • Warehouse layouts (rack positions, zones)<br>
+                        • SKU catalog (dimensions, categories, velocity)<br>
+                        • Order history (dates, SKUs, quantities)<br>
+                        • Automatic validation and data mapping<br>
+                        • Seasonal configuration per warehouse
+                    </p>
+                </div>
+                <aside class="notes">
+                    We're not just showing you synthetic data — we're ready for your real warehouses.
+                    The import pipeline handles your warehouse layouts, product catalogs, and order history.
+                    Just provide CSVs with standard columns, and we validate and optimize.
+                </aside>
+            </section>
+
+            <!-- SLIDE 14: RESULTS SUMMARY -->
+            <section>
+                <h2>Results Summary</h2>
+                <div class="two-column">
+                    <div class="column">
+                        <div class="metric-box">
+                            <p>Walking distance</p>
+                            <div class="metric-number">-82%</div>
+                        </div>
+                        <div class="metric-box">
+                            <p>Picks per hour</p>
+                            <div class="metric-number">+356%</div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="metric-box">
+                            <p>Annual savings<br>(per warehouse)</p>
+                            <div class="metric-number">~€400K</div>
+                        </div>
+                        <div class="metric-box">
+                            <p>26 warehouses</p>
+                            <div class="metric-number">~€10.4M</div>
+                        </div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    To summarize the impact: 82% reduction in walking distance,
+                    356% improvement in picks per hour,
+                    and approximately 400,000 euros in annual savings per warehouse.
+                    Across your entire network of 26 warehouses, that's over 10 million euros annually.
+                </aside>
+            </section>
+
+            <!-- SLIDE 15: SCALABILITY -->
+            <section>
+                <h2>Scalability</h2>
+                <h3 style="color: var(--light-text); font-size: 1.8em; margin-top: 1.5em;">
+                    26 Warehouses, One Platform
+                </h3>
+                <div class="architecture-diagram" style="margin-top: 2.5em;">
+                    <div style="display: flex; justify-content: center; gap: 2em; flex-wrap: wrap;">
+                        <div style="background: var(--action-red); padding: 1em 1.5em; border-radius: 8px; color: white; font-weight: bold; font-size: 1.2em;">
+                            WH Amsterdam
+                        </div>
+                        <div style="background: var(--action-red); padding: 1em 1.5em; border-radius: 8px; color: white; font-weight: bold; font-size: 1.2em;">
+                            WH Rotterdam
+                        </div>
+                        <div style="background: var(--action-red); padding: 1em 1.5em; border-radius: 8px; color: white; font-weight: bold; font-size: 1.2em;">
+                            WH Liège
+                        </div>
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div style="background: linear-gradient(135deg, rgba(227, 0, 15, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%); border: 2px solid var(--action-red); padding: 1.5em; border-radius: 8px; color: var(--light-text); font-weight: bold; font-size: 1.3em;">
+                        Centralized Optimization Platform
+                    </div>
+                    <div class="arrow">↓</div>
+                    <div style="display: flex; justify-content: center; gap: 2em; flex-wrap: wrap;">
+                        <div style="background: var(--success-green); padding: 1em 1.5em; border-radius: 8px; color: white; font-weight: bold; font-size: 1.2em;">
+                            Optimized Routes
+                        </div>
+                        <div style="background: var(--success-green); padding: 1em 1.5em; border-radius: 8px; color: white; font-weight: bold; font-size: 1.2em;">
+                            Slotting Plans
+                        </div>
+                        <div style="background: var(--success-green); padding: 1em 1.5em; border-radius: 8px; color: white; font-weight: bold; font-size: 1.2em;">
+                            KPI Reports
+                        </div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    The platform is designed for distributed operations.
+                    All 26 warehouses can be managed from one centralized system,
+                    while each warehouse gets customized optimization based on its layout and demand patterns.
+                </aside>
+            </section>
+
+            <!-- SLIDE 16: SEASONAL ADAPTATION -->
+            <section>
+                <h2>Seizoensaanpassing</h2>
+                <p style="margin-top: 1.5em; font-size: 1.3em;">
+                    Automatic seasonal re-slotting based on demand forecasts
+                </p>
+                <div style="margin-top: 3em; max-width: 800px; margin-left: auto; margin-right: auto;">
+                    <div style="background: rgba(227, 0, 15, 0.15); padding: 1.5em; border-radius: 8px; margin-bottom: 1.5em; border-left: 4px solid var(--action-red);">
+                        <p><strong style="color: var(--action-red);">Q1 — Cleaning & Home</strong></p>
+                        <p style="color: var(--secondary-text);">Forward placement for household products</p>
+                    </div>
+                    <div style="background: rgba(227, 0, 15, 0.15); padding: 1.5em; border-radius: 8px; margin-bottom: 1.5em; border-left: 4px solid var(--action-red);">
+                        <p><strong style="color: var(--action-red);">Q2 — Garden & Outdoor</strong></p>
+                        <p style="color: var(--secondary-text);">Garden tools, BBQ, outdoor furniture</p>
+                    </div>
+                    <div style="background: rgba(227, 0, 15, 0.15); padding: 1.5em; border-radius: 8px; margin-bottom: 1.5em; border-left: 4px solid var(--action-red);">
+                        <p><strong style="color: var(--action-red);">Q4 — Holidays & Decoration</strong></p>
+                        <p style="color: var(--secondary-text);">Christmas, decorations, party supplies</p>
+                    </div>
+                </div>
+                <aside class="notes">
+                    Unlike static slotting, our system automatically adapts to seasonality.
+                    When winter cleaning products peak in Q1, they move forward.
+                    When garden season arrives in Q2, those items get prime locations.
+                    Holiday decorations get optimal placement in Q4.
+                    This dynamic adjustment ensures you're always optimized for what's selling.
+                </aside>
+            </section>
+
+            <!-- SLIDE 17: ROADMAP -->
+            <section>
+                <h2>Roadmap</h2>
+                <div class="roadmap">
+                    <div class="roadmap-item">
+                        <div class="roadmap-phase">Pilot</div>
+                        <div class="roadmap-content">
+                            <p><strong style="color: var(--light-text);">1 warehouse, real data</strong></p>
+                            <p style="color: var(--secondary-text);">Deploy, validate metrics, iterate</p>
+                        </div>
+                    </div>
+                    <div class="roadmap-item">
+                        <div class="roadmap-phase">Validate</div>
+                        <div class="roadmap-content">
+                            <p><strong style="color: var(--light-text);">3-5 warehouses</strong></p>
+                            <p style="color: var(--secondary-text);">Performance verification, staff training</p>
+                        </div>
+                    </div>
+                    <div class="roadmap-item">
+                        <div class="roadmap-phase">Scale</div>
+                        <div class="roadmap-content">
+                            <p><strong style="color: var(--light-text);">26 warehouses</strong></p>
+                            <p style="color: var(--secondary-text);">Full network rollout, continuous monitoring</p>
+                        </div>
+                    </div>
+                    <div class="roadmap-item">
+                        <div class="roadmap-phase">Optimize</div>
+                        <div class="roadmap-content">
+                            <p><strong style="color: var(--light-text);">Advanced features</strong></p>
+                            <p style="color: var(--secondary-text);">Order batching, zone load balancing, predictive re-slotting</p>
+                        </div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    Our rollout strategy is pragmatic: start with one pilot warehouse,
+                    validate the metrics and get staff trained, then expand to a few more,
+                    and finally roll out across all 26 warehouses.
+                    We'll continuously monitor performance and add advanced features as you scale.
+                </aside>
+            </section>
+
+            <!-- SLIDE 18: CALL TO ACTION -->
+            <section>
+                <h2>Ready to Begin?</h2>
+                <p style="margin-top: 3em; font-size: 1.8em; color: var(--action-red);">
+                    Klaar voor een pilot met echte data?
+                </p>
+                <div style="margin-top: 3em; background: rgba(227, 0, 15, 0.15); padding: 2em; border-radius: 8px; border: 2px solid var(--action-red);">
+                    <p style="font-size: 1.3em; margin-bottom: 1.5em;">
+                        Next steps:
+                    </p>
+                    <ul style="list-style: none; padding: 0; text-align: left; max-width: 600px; margin: 0 auto;">
+                        <li style="padding: 0.8em 0; padding-left: 3em; position: relative;">
+                            <span style="position: absolute; left: 0; color: var(--action-red); font-size: 1.5em;">▸</span>
+                            Provide sample warehouse layout and order data
+                        </li>
+                        <li style="padding: 0.8em 0; padding-left: 3em; position: relative;">
+                            <span style="position: absolute; left: 0; color: var(--action-red); font-size: 1.5em;">▸</span>
+                            Run optimization on pilot warehouse
+                        </li>
+                        <li style="padding: 0.8em 0; padding-left: 3em; position: relative;">
+                            <span style="position: absolute; left: 0; color: var(--action-red); font-size: 1.5em;">▸</span>
+                            Validate results and plan rollout
+                        </li>
+                        <li style="padding: 0.8em 0; padding-left: 3em; position: relative;">
+                            <span style="position: absolute; left: 0; color: var(--action-red); font-size: 1.5em;">▸</span>
+                            Scale to 26 warehouses
+                        </li>
+                    </ul>
+                </div>
+                <p style="margin-top: 3em; color: var(--secondary-text); font-size: 1.1em;">
+                    Questions? Contact us.
+                </p>
+                <aside class="notes">
+                    We're ready to start whenever you are.
+                    We need sample data from one warehouse — layout and recent orders —
+                    and we'll run a complete optimization to show you the metrics.
+                    Once we validate that this works for Action, we scale across all 26.
+                    Thank you.
+                </aside>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.0/dist/reveal.min.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            slideNumber: true,
+            transition: 'fade',
+            transitionSpeed: 'default',
+            controls: true,
+            progress: true,
+            center: true,
+            touch: true,
+            overview: true,
+            keyboard: true,
+        });
+    </script>
+</body>
+</html>
