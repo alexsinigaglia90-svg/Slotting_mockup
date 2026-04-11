@@ -11,7 +11,11 @@ interface Loc {
   id: string; aisle: number; side: "L" | "R"; position: number; level: number;
   velocity: Velocity; skuName: string | null; skuId: string | null;
   category: string | null; picksWeek: number; picksMonth: number;
-  lastPicked: string | null; depotDist: number; efficiency: number;
+  lastPicked: string | null;
+  routeScore: number; // avg aisles visited per order containing this SKU
+  slottingScore: number; // 0-100, how well placed based on ML/OR analysis
+  coCluster: string; // affinity cluster name
+  coScore: number; // co-occurrence score with cluster neighbors (0-100)
   stock: number; maxStock: number;
 }
 
@@ -46,8 +50,10 @@ function genLocs():Loc[]{
         skuName:empty?null:prods?prods[Math.floor(r()*prods.length)]:null,
         category:cat,picksWeek:pw,picksMonth:pw*4+Math.floor(r()*pw),
         lastPicked:empty?null:`${Math.floor(r()*48)}u geleden`,
-        depotDist:Math.round((a*4.5+p*2+l*0.5)*10)/10,
-        efficiency:empty?0:vel==="A"&&a<3?85+Math.floor(r()*15):vel==="A"&&a>8?12+Math.floor(r()*20):35+Math.floor(r()*45),
+        routeScore:empty?0:vel==="A"?1.2+r()*0.8:vel==="B"?1.8+r()*1.2:vel==="C"?2.5+r()*1.5:3.5+r()*2,
+        slottingScore:empty?0:vel==="A"&&a<5?80+Math.floor(r()*20):vel==="A"&&a>=8?15+Math.floor(r()*20):vel==="D"&&a<3?20+Math.floor(r()*15):35+Math.floor(r()*45),
+        coCluster:empty?"":["Schoonmaak","Beauty Basics","Snacks & Snoep","Tuin & Buiten","Kantoor Essentials","Huisdier","Seizoen Deco","Kids Fun","Keuken"][Math.floor((a+Math.floor(r()*3))%9)],
+        coScore:empty?0:40+Math.floor(r()*60),
         maxStock:vel==="A"?48:vel==="B"?36:vel==="C"?24:12,
         stock:empty?0:vel==="A"?8+Math.floor(r()*40):vel==="B"?5+Math.floor(r()*30):vel==="C"?2+Math.floor(r()*22):Math.floor(r()*12),
       });
@@ -59,11 +65,11 @@ const LOCS=genLocs();
 const VCOL:Record<Velocity,string>={A:"#ff5c7c",B:"#ffb340",C:"#4da8ff",D:"#6478a0",empty:"transparent"};
 
 const PROBLEMS=[
-  {sev:"critical"as const,msg:"12 A-class SKUs op niveau 4-5 — dagelijks 2.340m onnodige loopafstand"},
-  {sev:"critical"as const,msg:"Gangpad A03: 3.2× meer traffic dan A12 — ernstig ongebalanceerd"},
-  {sev:"warning"as const,msg:"BBQ-seizoen nadert: 47 tuin-SKUs moeten naar forward-pick zone"},
-  {sev:"warning"as const,msg:"Beauty/Huishoudelijk cluster verspreid over 6 gangpaden — inefficiënt"},
-  {sev:"info"as const,msg:"23 D-class SKUs bezetten premium locaties in A01-A03"},
+  {sev:"critical"as const,msg:"Co-occurrence cluster 'Schoonmaak' verspreid over 5 gangpaden — ML detecteert 34% route-verlies"},
+  {sev:"critical"as const,msg:"Gangpad A03: 3.2× meer picks dan A12 — zone-balancering door OR-solver aanbevolen"},
+  {sev:"warning"as const,msg:"Seizoenspatroon gedetecteerd: tuin-SKUs velocity stijgt 280% — herclassificatie aanbevolen"},
+  {sev:"warning"as const,msg:"Affinity cluster 'Beauty Basics' gefragmenteerd — 6 gangpaden i.p.v. optimaal 2"},
+  {sev:"info"as const,msg:"ML-model: 23 D-class SKUs blokkeren high-frequency posities — swap kandidaten geïdentificeerd"},
 ];
 
 /* ═══ SIDEBAR ═══ */
@@ -147,8 +153,12 @@ function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal}:{level:numb
         detected=true;
         const subs=new Set<string>();
         nonEmpty.forEach(l=>{
-          if(l.picksWeek>30&&l.aisle>=5) subs.add(l.id);
-          if(l.picksWeek<5&&l.aisle<=2) subs.add(l.id);
+          // High-frequency items with poor co-occurrence clustering
+          if(l.picksWeek>30&&l.coScore<50) subs.add(l.id);
+          // Low-frequency items in high-traffic zones blocking better candidates
+          if(l.picksWeek<5&&l.aisle<=3&&l.velocity!=="A") subs.add(l.id);
+          // Items with high route score (causing many aisle visits)
+          if(l.routeScore>3.0&&l.picksWeek>15) subs.add(l.id);
         });
         setSuboptimal(subs);
       }
@@ -197,7 +207,7 @@ function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal}:{level:numb
       {/* Zoomable content */}
       <div style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${scale})`,transformOrigin:"0 0",padding:"20px 24px",willChange:"transform"}}>
         <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 14px",borderRadius:"var(--radius-full)",background:"rgba(54,216,158,0.12)",border:"1px solid rgba(54,216,158,0.25)",fontSize:11,fontWeight:600,color:"var(--accent-green)",marginBottom:14}}>
-          <span style={{width:7,height:7,borderRadius:"50%",background:"var(--accent-green)",animation:"pulse 2s ease infinite"}}/>DEPOT
+          <span style={{width:7,height:7,borderRadius:"50%",background:"var(--accent-green)",animation:"pulse 2s ease infinite"}}/>PICKING START · Live monitoring actief
         </div>
         <div style={{display:"flex",gap:8}}>
           {Array.from({length:NUM_AISLES},(_,ai)=>{
@@ -251,7 +261,7 @@ function SuboptimalAlert({count,onViewProposal}:{count:number;onViewProposal:()=
       <span style={{width:8,height:8,borderRadius:"50%",background:"var(--accent-red)",animation:"pulse 1.5s ease infinite",flexShrink:0}}/>
       <div style={{flex:1}}>
         <div style={{fontSize:12,fontWeight:600,color:"var(--accent-red)",marginBottom:2}}>Suboptimale slotting gedetecteerd</div>
-        <div style={{fontSize:11,color:"var(--text-secondary)"}}>{count} locaties vereisen herslotting — A-class producten te ver van depot, D-class op premium locaties</div>
+        <div style={{fontSize:11,color:"var(--text-secondary)"}}>{count} locaties vereisen herslotting — co-occurrence clusters verbroken, route-efficiëntie suboptimaal</div>
       </div>
       <button onClick={onViewProposal} style={{padding:"6px 16px",borderRadius:"var(--radius-sm)",background:"var(--accent-red)",color:"#fff",border:"none",fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",transition:"transform 0.1s ease"}} onMouseOver={e=>{e.currentTarget.style.transform="scale(1.05)"}} onMouseOut={e=>{e.currentTarget.style.transform="scale(1)"}}>Bekijk voorstel</button>
     </div>
@@ -286,11 +296,11 @@ function ReslotProposal({suboptimalCount,onConfirm,onCancel}:{suboptimalCount:nu
   };
 
   const moves=[
-    {from:"A09-L14-L1",to:"A02-R03-L1",sku:"Afwasmiddel 500ml",reason:"67 picks/wk, was 58m van depot → 12m",cat:"Huishoudelijk"},
-    {from:"A11-R08-L1",to:"A01-L07-L1",sku:"Chips Paprika 200g",reason:"54 picks/wk, was 72m van depot → 8m",cat:"Food"},
-    {from:"A10-L19-L1",to:"A03-R01-L1",sku:"Shampoo Argan 300ml",reason:"48 picks/wk, was 65m van depot → 15m",cat:"Beauty"},
-    {from:"A02-L04-L1",to:"A12-R11-L1",sku:"Riem Leder Bruin",reason:"2 picks/wk, premium locatie vrijmaken",cat:"Kleding"},
-    {from:"A01-R09-L1",to:"A14-L06-L1",sku:"Kunstbloem Roos",reason:"1 pick/wk, premium locatie vrijmaken",cat:"Decoratie"},
+    {from:"A09-L14-L1",to:"A03-R03-L1",sku:"Afwasmiddel 500ml",reason:"Co-occurrence 87% met WC-Reiniger & Schoonmaakdoekjes — cluster hergroeperen verlaagt gangpaden/order van 4.2 → 2.1",cat:"Huishoudelijk"},
+    {from:"A11-R08-L1",to:"A04-L07-L1",sku:"Chips Paprika 200g",reason:"Top-5 co-picked met Chocoladereep & Nootjes Mix — plaatsing in Snacks-cluster verlaagt route-score 38%",cat:"Food"},
+    {from:"A10-L19-L1",to:"A03-R01-L1",sku:"Shampoo Argan 300ml",reason:"Beauty-cluster verspreid over 5 gangpaden — hergroeperen bespaart 1.3 gangpad/order gemiddeld",cat:"Beauty"},
+    {from:"A02-L04-L1",to:"A12-R11-L1",sku:"Riem Leder Bruin",reason:"2 picks/wk bezet high-frequency zone — vrijmaken voor snelloper verhoogt zone-efficiëntie 15%",cat:"Kleding"},
+    {from:"A01-R09-L1",to:"A14-L06-L1",sku:"Kunstbloem Roos",reason:"1 pick/wk, ML-model detecteert 0% co-occurrence met zone-cluster — verplaatsen naar low-frequency zone",cat:"Decoratie"},
   ];
 
   // Confirmed state — don't replace panel, toaster is shown separately
@@ -310,14 +320,14 @@ function ReslotProposal({suboptimalCount,onConfirm,onCancel}:{suboptimalCount:nu
       {/* Impact summary */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
         <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:12}}>
-          <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>Loopafstand besparing</div>
-          <div style={{fontSize:20,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>-1.840m</div>
-          <div style={{fontSize:10,color:"var(--text-tertiary)"}}>per dag</div>
+          <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>Gangpaden/order reductie</div>
+          <div style={{fontSize:20,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>-1.4</div>
+          <div style={{fontSize:10,color:"var(--text-tertiary)"}}>gem. per order</div>
         </div>
         <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:12}}>
-          <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>Picks/uur verbetering</div>
-          <div style={{fontSize:20,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>+12%</div>
-          <div style={{fontSize:10,color:"var(--text-tertiary)"}}>geschat</div>
+          <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>Route-efficiëntie</div>
+          <div style={{fontSize:20,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>+23%</div>
+          <div style={{fontSize:10,color:"var(--text-tertiary)"}}>ML-geoptimaliseerd</div>
         </div>
       </div>
 
@@ -399,8 +409,8 @@ function ConfirmToaster({onDone}:{onDone:()=>void}){
             <span style={{fontSize:28,color:"var(--accent-green)"}}>✓</span>
           </div>
           <div style={{fontSize:16,fontWeight:800,color:"var(--text-primary)",marginBottom:6}}>Herslotting bevestigd</div>
-          <div style={{fontSize:13,color:"var(--accent-green)",fontWeight:600,marginBottom:4}}>5 verplaatsingen verzonden</div>
-          <div style={{fontSize:12,color:"var(--text-secondary)",marginBottom:16}}>Verwachte besparing: 1.840m/dag</div>
+          <div style={{fontSize:13,color:"var(--accent-green)",fontWeight:600,marginBottom:4}}>5 verplaatsingen verzonden naar WMS</div>
+          <div style={{fontSize:12,color:"var(--text-secondary)",marginBottom:16}}>Route-efficiëntie +23% · Co-occurrence clusters hersteld</div>
           <div style={{fontSize:11,color:"var(--text-tertiary)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
             <span style={{width:6,height:6,borderRadius:"50%",background:"var(--accent-green)",animation:"pulse 1s ease infinite"}}/>
             WMS instructies worden verwerkt
@@ -422,7 +432,12 @@ function Tip({loc,x,y}:{loc:Loc;x:number;y:number}){
       {loc.skuName&&<div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{loc.skuName}</div>}
       {loc.category&&<div style={{fontSize:11,color:"var(--text-tertiary)",marginBottom:10}}>{loc.category}</div>}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 20px"}}>
-        {[{label:"Picks/week",val:String(loc.picksWeek),color:loc.picksWeek>50?"var(--velocity-a)":"var(--text-primary)"},{label:"Afstand depot",val:`${loc.depotDist}m`,color:"var(--text-primary)"},{label:"Laatste pick",val:loc.lastPicked??"—",color:"var(--text-secondary)"},{label:"Efficiëntie",val:`${loc.efficiency}%`,color:loc.efficiency>70?"var(--accent-green)":loc.efficiency<35?"var(--accent-red)":"var(--accent-amber)"}].map((m,i)=>(
+        {[
+          {label:"Picks/week",val:String(loc.picksWeek),color:loc.picksWeek>50?"var(--velocity-a)":"var(--text-primary)"},
+          {label:"Route score",val:`${loc.routeScore.toFixed(1)} gangp/order`,color:loc.routeScore<2?"var(--accent-green)":loc.routeScore>3?"var(--accent-red)":"var(--accent-amber)"},
+          {label:"Co-occurrence",val:`${loc.coScore}%`,color:loc.coScore>70?"var(--accent-green)":loc.coScore<40?"var(--accent-red)":"var(--accent-amber)"},
+          {label:"Slotting score",val:`${loc.slottingScore}%`,color:loc.slottingScore>70?"var(--accent-green)":loc.slottingScore<35?"var(--accent-red)":"var(--accent-amber)"},
+        ].map((m,i)=>(
           <div key={i}><div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:2}}>{m.label}</div><div style={{fontSize:13,fontWeight:600,fontFamily:"var(--font-mono)",color:m.color}}>{m.val}</div></div>
         ))}
       </div>
@@ -444,7 +459,7 @@ function Detail({loc,onClose}:{loc:Loc;onClose:()=>void}){
       </div>
       {loc.skuName&&<div style={{background:"var(--bg-card)",borderRadius:"var(--radius-md)",padding:16,marginBottom:16}}><div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Product</div><div style={{fontSize:15,fontWeight:600,marginBottom:3}}>{loc.skuName}</div><div style={{fontSize:11,color:"var(--text-tertiary)",fontFamily:"var(--font-mono)"}}>{loc.skuId}</div></div>}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-        {[{label:"Picks / week",val:String(loc.picksWeek),color:loc.picksWeek>50?"var(--velocity-a)":"var(--text-primary)"},{label:"Picks / maand",val:String(loc.picksMonth),color:"var(--text-primary)"},{label:"Afstand depot",val:`${loc.depotDist}m`,color:loc.depotDist>60?"var(--accent-red)":"var(--accent-green)"},{label:"Efficiëntie",val:`${loc.efficiency}%`,color:loc.efficiency>70?"var(--accent-green)":loc.efficiency<35?"var(--accent-red)":"var(--accent-amber)"}].map((m,i)=>(
+        {[{label:"Picks / week",val:String(loc.picksWeek),color:loc.picksWeek>50?"var(--velocity-a)":"var(--text-primary)"},{label:"Co-occurrence",val:`${loc.coScore}%`,color:loc.coScore>70?"var(--accent-green)":loc.coScore<40?"var(--accent-red)":"var(--accent-amber)"},{label:"Route score",val:`${loc.routeScore.toFixed(1)} gangp.`,color:loc.routeScore<2?"var(--accent-green)":loc.routeScore>3?"var(--accent-red)":"var(--accent-amber)"},{label:"Slotting score",val:`${loc.slottingScore}%`,color:loc.slottingScore>70?"var(--accent-green)":loc.slottingScore<35?"var(--accent-red)":"var(--accent-amber)"}].map((m,i)=>(
           <div key={i} style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:"12px 14px"}}><div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>{m.label}</div><div style={{fontSize:22,fontWeight:700,fontFamily:"var(--font-mono)",color:m.color,letterSpacing:"-0.02em"}}>{m.val}</div></div>
         ))}
       </div>
@@ -456,9 +471,34 @@ function Detail({loc,onClose}:{loc:Loc;onClose:()=>void}){
         </div>
         <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"var(--text-tertiary)",marginTop:6}}><span>4w</span><span>3w</span><span>2w</span><span>1w</span><span>Nu</span></div>
       </div>
-      <div style={{background:loc.efficiency<35?"rgba(255,92,108,0.08)":"rgba(54,216,158,0.08)",borderRadius:"var(--radius-md)",padding:16,marginBottom:16,border:`1px solid ${loc.efficiency<35?"rgba(255,92,108,0.15)":"rgba(54,216,158,0.15)"}`}}>
-        <div style={{fontSize:12,fontWeight:600,marginBottom:4,color:loc.efficiency<35?"var(--accent-red)":"var(--accent-green)"}}>{loc.efficiency<35?"⚠ Suboptimale plaatsing":"✓ Efficiënte plaatsing"}</div>
-        <div style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.6}}>{loc.efficiency<35&&loc.velocity==="A"?`Dit A-class product wordt ${loc.picksWeek}×/week gepickt maar staat ${loc.depotDist}m van het depot. Verplaatsing naar A01-A03 bespaart ~${Math.round(loc.depotDist*0.7*loc.picksWeek)}m loopafstand per week.`:loc.efficiency<35?"Product staat te ver van depot voor zijn pickfrequentie.":"Locatie is correct ingedeeld voor de huidige pickfrequentie."}</div>
+      {/* ML/OR Assessment */}
+      <div style={{background:loc.slottingScore<35?"rgba(255,92,108,0.08)":"rgba(54,216,158,0.08)",borderRadius:"var(--radius-md)",padding:16,marginBottom:16,border:`1px solid ${loc.slottingScore<35?"rgba(255,92,108,0.15)":"rgba(54,216,158,0.15)"}`}}>
+        <div style={{fontSize:12,fontWeight:600,marginBottom:4,color:loc.slottingScore<35?"var(--accent-red)":"var(--accent-green)"}}>{loc.slottingScore<35?"⚠ Herslotting aanbevolen":"✓ Optimaal geslot"}</div>
+        <div style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.6}}>
+          {loc.slottingScore<35&&loc.picksWeek>30
+            ?`ML-analyse: dit product heeft ${loc.coScore}% co-occurrence met cluster "${loc.coCluster}" maar staat buiten die zone. Hergroepering verlaagt het gemiddeld aantal gangpaden per order van ${loc.routeScore.toFixed(1)} naar ~${(loc.routeScore*0.6).toFixed(1)}.`
+            :loc.slottingScore<35
+            ?`Dit product heeft een lage co-occurrence score (${loc.coScore}%) met de huidige zone. OR-solver suggereert verplaatsing naar ${loc.coCluster}-cluster voor betere route-efficiëntie.`
+            :`ML-model bevestigt: product is correct geplaatst in ${loc.coCluster}-cluster (co-occurrence ${loc.coScore}%). Route score ${loc.routeScore.toFixed(1)} gangpaden/order is binnen optimale range.`}
+        </div>
+      </div>
+      {/* Cluster info */}
+      <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-md)",padding:16,marginBottom:16}}>
+        <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>AI Slotting Factoren</div>
+        {[
+          {label:"Affinity Cluster",val:loc.coCluster,icon:"🔗"},
+          {label:"Co-occurrence Score",val:`${loc.coScore}%`,icon:"📊"},
+          {label:"Velocity Classificatie",val:`${loc.velocity}-class (${loc.velocity==="A"?"ML: hoge frequentie":loc.velocity==="B"?"ML: bovengemiddeld":loc.velocity==="C"?"ML: gemiddeld":"ML: laagfrequent"})`,icon:"⚡"},
+          {label:"Route Impact",val:`${loc.routeScore.toFixed(1)} gangpaden/order`,icon:"🛤️"},
+        ].map((f,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<3?"1px solid var(--border-light)":"none"}}>
+            <span style={{fontSize:12}}>{f.icon}</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:10,color:"var(--text-tertiary)"}}>{f.label}</div>
+              <div style={{fontSize:12,fontWeight:500}}>{f.val}</div>
+            </div>
+          </div>
+        ))}
       </div>
       <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-md)",padding:16}}>
         <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Vaak samen gepickt met</div>
@@ -490,8 +530,8 @@ const NEW_SKUS=[
 ];
 
 const SLOT_SUGGESTIONS=[
-  {sku:"LED Tuinverlichting Solar 4st",location:"A02-R05-L1",reason:"Hoge verwachte velocity, nabij depot, naast verwante tuin-producten"},
-  {sku:"Zonnebrand SPF50 200ml",location:"A01-L12-L1",reason:"A-class verwacht, grondniveau, nabij beauty cluster"},
+  {sku:"LED Tuinverlichting Solar 4st",location:"A02-R05-L1",reason:"ML voorspelt A-class velocity — 89% co-occurrence met Tuin & Buiten cluster"},
+  {sku:"Zonnebrand SPF50 200ml",location:"A01-L12-L1",reason:"A-class verwacht — OR-solver plaatst in Beauty Basics cluster, route-score optimaal"},
   {sku:"Picknickkleed 150x200",location:"A04-R08-L2",reason:"B-class, tuin-zone, co-occurrence met BBQ producten"},
   {sku:"Insectenspray 400ml",location:"A03-L15-L1",reason:"B-class, huishoudelijk zone, grondniveau"},
   {sku:"Opblaasbaar Zwembad 120cm",location:"A05-R02-L1",reason:"B-class, groot formaat → grondniveau verplicht"},
