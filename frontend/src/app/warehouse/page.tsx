@@ -63,7 +63,7 @@ function genLocs():Loc[]{
 }
 
 const LOCS=genLocs();
-const VCOL:Record<Velocity,string>={A:"#ff5c7c",B:"#ffb340",C:"#4da8ff",D:"#6478a0",empty:"transparent"};
+const VCOL:Record<Velocity,string>={A:"#34d89e",B:"#f0c040",C:"#5ba8ff",D:"#8090b8",empty:"transparent"};
 
 const PROBLEMS=[
   {sev:"critical"as const,msg:"Co-occurrence cluster 'Schoonmaak' verspreid over 5 gangpaden — ML detecteert 34% route-verlies"},
@@ -75,6 +75,7 @@ const PROBLEMS=[
 
 /* ═══ SIDEBAR ═══ */
 function Sidebar({active,onChange}:{active:string;onChange:(v:string)=>void}){
+  const[collapsed,setCollapsed]=useState(false);
   const items=[
     {id:"overview",label:"Overzicht",icon:"⊞"},
     {id:"warehouse",label:"Warehouse Map",icon:"⊟"},
@@ -84,31 +85,34 @@ function Sidebar({active,onChange}:{active:string;onChange:(v:string)=>void}){
     {id:"opex",label:"Opex Impact",icon:"€"},
   ];
   return(
-    <div style={{width:240,minHeight:"100vh",background:"var(--bg-surface)",borderRight:"1px solid var(--border-medium)",display:"flex",flexDirection:"column",padding:"20px 0",animation:"slideInLeft 0.35s var(--ease-out) backwards",position:"relative",zIndex:2}}>
+    <div style={{width:collapsed?56:240,minHeight:"100vh",background:"var(--bg-surface)",borderRight:"1px solid var(--border-medium)",display:"flex",flexDirection:"column",padding:"20px 0",animation:"slideInLeft 0.35s var(--ease-out) backwards",position:"relative",zIndex:2,transition:"width 0.25s var(--ease-out)",overflow:"hidden"}}>
       <div style={{padding:"0 20px",marginBottom:32}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}>
           <div style={{width:30,height:30,borderRadius:10,background:"linear-gradient(135deg, var(--accent-purple), var(--velocity-a))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff",boxShadow:"0 2px 8px rgba(139,111,255,0.25)"}}>S</div>
           <span style={{fontSize:17,fontWeight:800,letterSpacing:"-0.03em"}}>SlotPilot</span>
         </div>
-        <span style={{fontSize:10,fontWeight:500,color:"var(--text-tertiary)",letterSpacing:"0.06em",textTransform:"uppercase"}}>Warehouse Intelligence</span>
-        <div style={{width:40,height:2,borderRadius:1,background:"var(--accent-cict)",marginTop:8,opacity:0.6}}/>
+        {!collapsed&&<span style={{fontSize:10,fontWeight:500,color:"var(--text-tertiary)",letterSpacing:"0.06em",textTransform:"uppercase"}}>Warehouse Intelligence</span>}
+        {!collapsed&&<div style={{width:40,height:2,borderRadius:1,background:"var(--accent-cict)",marginTop:8,opacity:0.6}}/>}
+        {/* Collapse toggle */}
+        <button onClick={()=>setCollapsed(c=>!c)} style={{position:"absolute",top:20,right:collapsed?14:-10,width:22,height:22,borderRadius:6,border:"1px solid var(--border-medium)",background:"var(--bg-card)",color:"var(--text-tertiary)",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",transition:"right 0.2s ease",zIndex:5}}>{collapsed?"→":"←"}</button>
       </div>
       <nav className="stagger" style={{padding:"0 10px",flex:1,display:"flex",flexDirection:"column",gap:2}}>
         {items.map(it=>(
-          <button key={it.id} onClick={()=>onChange(it.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:"var(--radius-sm)",border:"none",cursor:"pointer",background:active===it.id?"var(--accent-purple-soft)":"transparent",color:active===it.id?"var(--accent-purple)":"var(--text-secondary)",fontSize:13,fontWeight:active===it.id?600:450,fontFamily:"var(--font-sans)",transition:"all 0.15s ease"}}>
-            <span style={{width:18,textAlign:"center",fontSize:13}}>{it.icon}</span>
-            <span style={{flex:1,textAlign:"left"}}>{it.label}</span>
-            {it.badge&&<span style={{background:"var(--accent-red)",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 6px",borderRadius:"var(--radius-full)",minWidth:18,textAlign:"center"}}>{it.badge}</span>}
+          <button key={it.id} onClick={()=>onChange(it.id)} title={it.label} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:collapsed?"9px 0":"9px 12px",justifyContent:collapsed?"center":"flex-start",borderRadius:"var(--radius-sm)",border:"none",cursor:"pointer",background:active===it.id?"var(--accent-purple-soft)":"transparent",color:active===it.id?"var(--accent-purple)":"var(--text-secondary)",fontSize:13,fontWeight:active===it.id?600:450,fontFamily:"var(--font-sans)",transition:"all 0.15s ease",position:"relative"}}>
+            <span style={{width:18,textAlign:"center",fontSize:collapsed?16:13}}>{it.icon}</span>
+            {!collapsed&&<span style={{flex:1,textAlign:"left"}}>{it.label}</span>}
+            {it.badge&&<span style={{background:"var(--accent-red)",color:"#fff",fontSize:8,fontWeight:700,padding:"1px 4px",borderRadius:"var(--radius-full)",minWidth:14,textAlign:"center",...(collapsed?{position:"absolute",top:2,right:2}:{})}}>{it.badge}</span>}
           </button>
         ))}
       </nav>
-      <div style={{padding:"16px 20px",borderTop:"1px solid var(--border-light)"}}>
-        <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"var(--text-tertiary)",marginBottom:8}}>
-          <span style={{width:6,height:6,borderRadius:"50%",background:"var(--accent-green)"}}/>WMS Connected — DC Echt
+      <div style={{padding:collapsed?"16px 8px":"16px 20px",borderTop:"1px solid var(--border-light)",transition:"padding 0.2s ease"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"var(--text-tertiary)",marginBottom:8,justifyContent:collapsed?"center":"flex-start"}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:"var(--accent-green)",flexShrink:0}}/>
+          {!collapsed&&<span>WMS Connected — DC Echt</span>}
         </div>
-        <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:14}}>Laatste sync: 4 min geleden</div>
+        {!collapsed&&<div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:14}}>Laatste sync: 4 min geleden</div>}
         {/* CICT Logo */}
-        <div style={{display:"flex",alignItems:"center",gap:8,opacity:0.7}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,opacity:0.7,...(collapsed?{justifyContent:"center"}:{})}}>
           <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
             {/* Yellow background square */}
             <rect x="5" y="5" width="55" height="55" rx="4" fill="var(--accent-cict)" style={{animation:"cictFadeIn 0.8s ease-out 0.5s backwards"}}/>
@@ -119,10 +123,10 @@ function Sidebar({active,onChange}:{active:string;onChange:(v:string)=>void}){
             {/* ICT text */}
             <text x="48" y="80" fontSize="26" fontWeight="900" fill="var(--text-primary)" fontFamily="var(--font-sans)" style={{animation:"cictFadeIn 0.6s ease-out 1.4s backwards"}}>ICT</text>
           </svg>
-          <div>
+          {!collapsed&&<div>
             <div style={{fontSize:9,fontWeight:700,color:"var(--text-tertiary)",letterSpacing:"0.03em"}}>POWERED BY</div>
             <div style={{fontSize:11,fontWeight:700,color:"var(--accent-cict)"}}>CICT Innovations</div>
-          </div>
+          </div>}
         </div>
       </div>
     </div>
@@ -387,7 +391,8 @@ function ReslotProposal({suboptimalCount,onConfirm,onCancel}:{suboptimalCount:nu
 
 /* ═══ CONFIRMATION TOASTER — celebration style, top right ═══ */
 function ConfirmToaster({onDone}:{onDone:()=>void}){
-  useEffect(()=>{const t=setTimeout(onDone,3000);return()=>clearTimeout(t);},[onDone]);
+  useEffect(()=>{const t=setTimeout(onDone,4000);return()=>clearTimeout(t);},[onDone]);
+  // Also clearable via close button below
   // Generate confetti particles — spread across full width
   const confetti=useRef(Array.from({length:40},(_,i)=>({
     x:Math.random()*320-10,
@@ -401,6 +406,8 @@ function ConfirmToaster({onDone}:{onDone:()=>void}){
   return(
     <div style={{position:"fixed",top:20,right:20,zIndex:200,animation:"toasterIn 0.5s var(--ease-out)"}}>
       <div style={{width:320,padding:"24px",borderRadius:"var(--radius-lg)",background:"var(--bg-surface)",border:"1px solid rgba(54,216,158,0.25)",boxShadow:"0 12px 48px rgba(0,0,0,0.5), 0 0 30px rgba(54,216,158,0.08)",position:"relative",overflow:"hidden"}}>
+        {/* Close button */}
+        <button onClick={onDone} style={{position:"absolute",top:8,right:8,width:22,height:22,borderRadius:6,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"var(--text-tertiary)",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",zIndex:5}}>×</button>
         {/* Confetti */}
         {confetti.current.map((c,i)=>(
           <div key={i} style={{
