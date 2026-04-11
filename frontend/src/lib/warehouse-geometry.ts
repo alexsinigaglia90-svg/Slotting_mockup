@@ -11,14 +11,16 @@ export interface RackPosition3D {
   worldZ: number;
 }
 
-export const RACK_WIDTH = 0.8;
-export const RACK_HEIGHT = 0.45;
-export const RACK_DEPTH = 1.8;
-const SIDE_OFFSET = 1.0;
+// Rack dimensions — scaled for visibility
+export const RACK_WIDTH = 1.6;    // width along aisle direction (x)
+export const RACK_HEIGHT = 0.8;   // height per level
+export const RACK_DEPTH = 1.6;    // depth along z
+const SIDE_OFFSET = 2.0;          // offset from aisle center line
 
 export function generateAllPositions(config: WarehouseConfig = DEFAULT_WAREHOUSE_CONFIG): RackPosition3D[] {
   const positions: RackPosition3D[] = [];
-  const rackSpacing = config.aisleLengthM / config.racksPerAisle;
+  const rackSpacing = config.aisleLengthM / config.racksPerAisle; // 2.0m
+
   for (let a = 0; a < config.numAisles; a++) {
     const aisleX = a * config.aisleSpacingM;
     for (const side of ["left", "right"] as const) {
@@ -31,7 +33,10 @@ export function generateAllPositions(config: WarehouseConfig = DEFAULT_WAREHOUSE
           const rp = String(r).padStart(2, "0");
           positions.push({
             locationId: `A${ap}-${sc}${rp}-L${l}`,
-            aisleIndex: a, rackPosition: r, side, level: l,
+            aisleIndex: a,
+            rackPosition: r,
+            side,
+            level: l,
             worldX: aisleX + xOffset,
             worldY: (l - 1) * RACK_HEIGHT + RACK_HEIGHT / 2,
             worldZ: z,
@@ -44,9 +49,19 @@ export function generateAllPositions(config: WarehouseConfig = DEFAULT_WAREHOUSE
 }
 
 export function getWarehouseCenter(config = DEFAULT_WAREHOUSE_CONFIG) {
+  const totalWidth = (config.numAisles - 1) * config.aisleSpacingM;
   return {
-    x: ((config.numAisles - 1) * config.aisleSpacingM) / 2,
-    y: 1.25,
+    x: totalWidth / 2,
+    y: (config.levelsPerRack * RACK_HEIGHT) / 2,
     z: config.aisleLengthM / 2,
+  };
+}
+
+export function getWarehouseBounds(config = DEFAULT_WAREHOUSE_CONFIG) {
+  const totalWidth = (config.numAisles - 1) * config.aisleSpacingM + SIDE_OFFSET * 2 + RACK_WIDTH;
+  return {
+    width: totalWidth,
+    depth: config.aisleLengthM + 4,
+    height: config.levelsPerRack * RACK_HEIGHT,
   };
 }

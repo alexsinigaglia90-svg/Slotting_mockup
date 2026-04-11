@@ -473,6 +473,176 @@ function Detail({loc,onClose}:{loc:Loc;onClose:()=>void}){
   );
 }
 
+/* ═══ NEW SKU WIZARD ═══ */
+const NEW_SKUS=[
+  {id:"SKU-NEW-001",name:"LED Tuinverlichting Solar 4st",cat:"Tuin & Seizoen",velocity:"A"as Velocity,expectedPicks:62},
+  {id:"SKU-NEW-002",name:"Zonnebrand SPF50 200ml",cat:"Beauty",velocity:"A"as Velocity,expectedPicks:55},
+  {id:"SKU-NEW-003",name:"Picknickkleed 150x200",cat:"Tuin & Seizoen",velocity:"B"as Velocity,expectedPicks:28},
+  {id:"SKU-NEW-004",name:"Insectenspray 400ml",cat:"Huishoudelijk",velocity:"B"as Velocity,expectedPicks:22},
+  {id:"SKU-NEW-005",name:"Opblaasbaar Zwembad 120cm",cat:"Tuin & Seizoen",velocity:"B"as Velocity,expectedPicks:18},
+  {id:"SKU-NEW-006",name:"IJsvormpjes Siliconen",cat:"Huishoudelijk",velocity:"C"as Velocity,expectedPicks:8},
+  {id:"SKU-NEW-007",name:"Strandlaken 90x170",cat:"Kleding",velocity:"C"as Velocity,expectedPicks:7},
+  {id:"SKU-NEW-008",name:"Citronella Kaars Set 3st",cat:"Tuin & Seizoen",velocity:"C"as Velocity,expectedPicks:9},
+  {id:"SKU-NEW-009",name:"Waterpistool XL 45cm",cat:"Speelgoed",velocity:"C"as Velocity,expectedPicks:6},
+  {id:"SKU-NEW-010",name:"Tuinslang Koppeling Set",cat:"Tuin & Seizoen",velocity:"D"as Velocity,expectedPicks:3},
+  {id:"SKU-NEW-011",name:"Camping Bestek Set",cat:"Huishoudelijk",velocity:"D"as Velocity,expectedPicks:2},
+  {id:"SKU-NEW-012",name:"Hangmat Katoen Naturel",cat:"Tuin & Seizoen",velocity:"D"as Velocity,expectedPicks:2},
+];
+
+const SLOT_SUGGESTIONS=[
+  {sku:"LED Tuinverlichting Solar 4st",location:"A02-R05-L1",reason:"Hoge verwachte velocity, nabij depot, naast verwante tuin-producten"},
+  {sku:"Zonnebrand SPF50 200ml",location:"A01-L12-L1",reason:"A-class verwacht, grondniveau, nabij beauty cluster"},
+  {sku:"Picknickkleed 150x200",location:"A04-R08-L2",reason:"B-class, tuin-zone, co-occurrence met BBQ producten"},
+  {sku:"Insectenspray 400ml",location:"A03-L15-L1",reason:"B-class, huishoudelijk zone, grondniveau"},
+  {sku:"Opblaasbaar Zwembad 120cm",location:"A05-R02-L1",reason:"B-class, groot formaat → grondniveau verplicht"},
+  {sku:"IJsvormpjes Siliconen",location:"A06-L09-L2",reason:"C-class, huishoudelijk cluster"},
+  {sku:"Strandlaken 90x170",location:"A08-R03-L2",reason:"C-class, kleding/accessoires zone"},
+  {sku:"Citronella Kaars Set 3st",location:"A07-L11-L2",reason:"C-class, naast bestaande kaarsen"},
+  {sku:"Waterpistool XL 45cm",location:"A09-R06-L3",reason:"C-class, speelgoed zone, niveau 3"},
+  {sku:"Tuinslang Koppeling Set",location:"A12-L04-L3",reason:"D-class, bulk storage zone"},
+  {sku:"Camping Bestek Set",location:"A13-R07-L4",reason:"D-class, laagfrequent, bovenin"},
+  {sku:"Hangmat Katoen Naturel",location:"A14-L02-L4",reason:"D-class, groot, bulk storage"},
+];
+
+const DISPLACED=[
+  {sku:"Wintersjaal Grijs",from:"A02-R05-L1",to:"A11-L08-L3",reason:"D-class, 1 pick/wk → verplaatst naar bulk"},
+  {sku:"Kerstverlichting 200LED",from:"A01-L12-L1",to:"A13-R12-L4",reason:"Seizoensartikel buiten seizoen → opslag"},
+  {sku:"Handschoenen Fleece",from:"A04-R08-L2",to:"A14-L09-L4",reason:"0 picks afgelopen maand → verplaatst"},
+];
+
+function NewSkuWizard({onConfirm,onCancel}:{onConfirm:()=>void;onCancel:()=>void}){
+  const[step,setStep]=useState(0);
+  const[holding,setHolding]=useState(false);
+  const[holdProgress,setHoldProgress]=useState(0);
+  const holdTimer=useRef<ReturnType<typeof setInterval>|null>(null);
+
+  const startHold=()=>{
+    setHolding(true);setHoldProgress(0);let p=0;
+    holdTimer.current=setInterval(()=>{p+=2;setHoldProgress(p);if(p>=100){if(holdTimer.current)clearInterval(holdTimer.current);setTimeout(onConfirm,300);}},30);
+  };
+  const cancelHold=()=>{setHolding(false);setHoldProgress(0);if(holdTimer.current)clearInterval(holdTimer.current);};
+
+  const steps=["Nieuwe SKUs","Voorgestelde locaties","Impact","Bevestig"];
+
+  return(
+    <div style={{position:"fixed",bottom:24,right:24,zIndex:150,width:420,maxHeight:"70vh",borderRadius:"var(--radius-lg)",background:"var(--bg-surface)",border:"1px solid var(--border-medium)",boxShadow:"var(--shadow-xl), 0 0 40px rgba(139,111,255,0.06)",animation:"toasterIn 0.5s var(--ease-out)",display:"flex",flexDirection:"column"}}>
+      {/* Header */}
+      <div style={{padding:"16px 20px",borderBottom:"1px solid var(--border-light)",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+        <div>
+          <div style={{fontSize:14,fontWeight:700,marginBottom:2}}>Nieuwe SKU Batch</div>
+          <div style={{fontSize:11,color:"var(--text-tertiary)"}}>{NEW_SKUS.length} artikelen ontvangen van WMS</div>
+        </div>
+        <button onClick={onCancel} style={{width:28,height:28,borderRadius:"var(--radius-sm)",border:"1px solid var(--border-light)",background:"var(--bg-subtle)",color:"var(--text-secondary)",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+      </div>
+
+      {/* Step indicators */}
+      <div style={{padding:"12px 20px",display:"flex",gap:4,flexShrink:0}}>
+        {steps.map((s,i)=>(
+          <div key={i} style={{flex:1,display:"flex",flexDirection:"column",gap:4,cursor:"pointer"}} onClick={()=>i<=step&&setStep(i)}>
+            <div style={{height:3,borderRadius:2,background:i<=step?"var(--accent-purple)":"var(--bg-elevated)",transition:"background 0.3s ease"}}/>
+            <span style={{fontSize:9,color:i===step?"var(--accent-purple)":"var(--text-tertiary)",fontWeight:i===step?600:400}}>{s}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Content — scrollable */}
+      <div style={{flex:1,overflow:"auto",padding:"0 20px 16px"}}>
+
+        {/* Step 0: New SKUs list */}
+        {step===0&&(
+          <div>
+            <div style={{fontSize:11,color:"var(--text-secondary)",marginBottom:10}}>De volgende artikelen zijn ontvangen en wachten op slotting:</div>
+            {NEW_SKUS.map((s,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 0",borderBottom:i<NEW_SKUS.length-1?"1px solid var(--border-light)":"none",animation:`fadeInUp 0.3s var(--ease-out) ${i*0.03}s backwards`}}>
+                <div>
+                  <div style={{fontSize:12,fontWeight:500}}>{s.name}</div>
+                  <div style={{fontSize:10,color:"var(--text-tertiary)"}}>{s.cat} · {s.id}</div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:10,fontFamily:"var(--font-mono)",color:"var(--text-tertiary)"}}>{s.expectedPicks}/wk</span>
+                  <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:"var(--radius-full)",background:VCOL[s.velocity],color:"#fff"}}>{s.velocity}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Step 1: Suggested locations */}
+        {step===1&&(
+          <div>
+            <div style={{fontSize:11,color:"var(--text-secondary)",marginBottom:10}}>Op basis van velocity, affiniteit en beschikbaarheid stellen wij de volgende locaties voor:</div>
+            {SLOT_SUGGESTIONS.map((s,i)=>(
+              <div key={i} style={{padding:"8px 10px",background:"var(--bg-card)",borderRadius:"var(--radius-sm)",marginBottom:6,animation:`fadeInUp 0.3s var(--ease-out) ${i*0.03}s backwards`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                  <span style={{fontSize:12,fontWeight:600}}>{s.sku}</span>
+                  <span style={{fontSize:10,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>{s.location}</span>
+                </div>
+                <div style={{fontSize:10,color:"var(--text-tertiary)"}}>{s.reason}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Step 2: Impact on existing slotting */}
+        {step===2&&(
+          <div>
+            <div style={{fontSize:11,color:"var(--text-secondary)",marginBottom:10}}>Om ruimte te maken worden de volgende bestaande producten verplaatst:</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+              <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:12}}>
+                <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>Producten verplaatst</div>
+                <div style={{fontSize:22,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--accent-amber)"}}>{DISPLACED.length}</div>
+              </div>
+              <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:12}}>
+                <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>Netto impact</div>
+                <div style={{fontSize:22,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>+8%</div>
+                <div style={{fontSize:10,color:"var(--text-tertiary)"}}>picks/uur</div>
+              </div>
+            </div>
+            {DISPLACED.map((d,i)=>(
+              <div key={i} style={{padding:"8px 10px",background:"rgba(255,190,48,0.06)",border:"1px solid rgba(255,190,48,0.12)",borderRadius:"var(--radius-sm)",marginBottom:6,animation:`fadeInUp 0.3s var(--ease-out) ${i*0.05}s backwards`}}>
+                <div style={{fontSize:12,fontWeight:600,marginBottom:4}}>{d.sku}</div>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                  <span style={{fontSize:11,fontFamily:"var(--font-mono)",color:"var(--accent-red)"}}>{d.from}</span>
+                  <span style={{fontSize:11,color:"var(--text-tertiary)"}}>→</span>
+                  <span style={{fontSize:11,fontFamily:"var(--font-mono)",color:"var(--accent-amber)"}}>{d.to}</span>
+                </div>
+                <div style={{fontSize:10,color:"var(--text-tertiary)"}}>{d.reason}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Step 3: Confirm */}
+        {step===3&&(
+          <div style={{textAlign:"center",padding:"20px 0"}}>
+            <div style={{fontSize:40,marginBottom:12}}>📦</div>
+            <div style={{fontSize:16,fontWeight:700,marginBottom:6}}>{NEW_SKUS.length} nieuwe SKUs slotten</div>
+            <div style={{fontSize:13,color:"var(--text-secondary)",marginBottom:4}}>{DISPLACED.length} bestaande producten verplaatsen</div>
+            <div style={{fontSize:13,color:"var(--accent-green)",fontWeight:600,marginBottom:20}}>Verwachte verbetering: +8% picks/uur</div>
+            <button onPointerDown={startHold} onPointerUp={cancelHold} onPointerLeave={cancelHold} style={{
+              width:"100%",height:52,borderRadius:"var(--radius-md)",border:"2px solid",
+              borderColor:holding?"var(--accent-green)":"var(--border-medium)",cursor:"pointer",
+              background:holding?`linear-gradient(90deg, rgba(54,216,158,0.25) ${holdProgress}%, var(--bg-elevated) ${holdProgress}%)`:"var(--bg-elevated)",
+              color:holding?"var(--accent-green)":"var(--text-primary)",fontSize:14,fontWeight:700,
+              transition:holding?"none":"all 0.2s ease",userSelect:"none",touchAction:"none",
+            }}>
+              {holding?`${Math.round(holdProgress)}% — Blijf vasthouden...`:"⏎ Houd ingedrukt om te bevestigen"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Footer nav */}
+      {step<3&&(
+        <div style={{padding:"12px 20px",borderTop:"1px solid var(--border-light)",display:"flex",justifyContent:"space-between",flexShrink:0}}>
+          <button onClick={()=>setStep(s=>Math.max(0,s-1))} disabled={step===0} style={{padding:"6px 16px",borderRadius:"var(--radius-sm)",border:"1px solid var(--border-medium)",background:"transparent",color:step===0?"var(--text-tertiary)":"var(--text-secondary)",fontSize:12,fontWeight:500,cursor:step===0?"default":"pointer"}}>Vorige</button>
+          <button onClick={()=>setStep(s=>s+1)} style={{padding:"6px 16px",borderRadius:"var(--radius-sm)",border:"none",background:"var(--accent-purple)",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>Volgende</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ═══ PROBLEMS ═══ */
 function Problems(){
   const sevColor={critical:"var(--accent-red)",warning:"var(--accent-amber)",info:"var(--accent-purple)"};
@@ -510,6 +680,10 @@ export default function WarehousePage(){
   const[showProposal,setShowProposal]=useState(false);
   const[showConfirmToast,setShowConfirmToast]=useState(false);
   const[shouldClearSuboptimal,setShouldClearSuboptimal]=useState(false);
+  const[showNewSkuWizard,setShowNewSkuWizard]=useState(false);
+
+  // Trigger new SKU wizard after 45 seconds
+  useEffect(()=>{const t=setTimeout(()=>setShowNewSkuWizard(true),45000);return()=>clearTimeout(t);},[]);
   const onHover=useCallback((l:Loc|null,x:number,y:number)=>{setHovered(l?{loc:l,x,y}:null);},[]);
 
   return(
@@ -544,6 +718,7 @@ export default function WarehousePage(){
         <Legend/>
       </div>
       {showConfirmToast&&<ConfirmToaster onDone={()=>setShowConfirmToast(false)}/>}
+      {showNewSkuWizard&&<NewSkuWizard onConfirm={()=>{setShowNewSkuWizard(false);setShowConfirmToast(true);}} onCancel={()=>setShowNewSkuWizard(false)}/>}
     </div>
   );
 }
