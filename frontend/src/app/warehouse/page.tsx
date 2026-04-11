@@ -130,7 +130,7 @@ function Sidebar({active,onChange}:{active:string;onChange:(v:string)=>void}){
 }
 
 /* ═══ ZOOMABLE WAREHOUSE MAP WITH LIVE PICKS ═══ */
-function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal}:{level:number;onHover:(l:Loc|null,x:number,y:number)=>void;onSelect:(l:Loc|null)=>void;onShowProposal:()=>void;clearSuboptimal:boolean}){
+function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal,onPickUpdate,onSuboptimalUpdate}:{level:number;onHover:(l:Loc|null,x:number,y:number)=>void;onSelect:(l:Loc|null)=>void;onShowProposal:()=>void;clearSuboptimal:boolean;onPickUpdate:(n:number)=>void;onSuboptimalUpdate:(n:number)=>void}){
   const filtered=level===0?LOCS.filter(l=>l.level===1):LOCS.filter(l=>l.level===level);
   const [scale,setScale]=useState(1);
   const [pan,setPan]=useState({x:0,y:0});
@@ -165,6 +165,7 @@ function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal}:{level:numb
       setActivePicks(picked);
       totalPicks+=picked.size;
       setPickCount(totalPicks);
+      onPickUpdate(totalPicks);
       setTimeout(()=>setActivePicks(new Set()),600);
 
       // After 20 picks, detect suboptimal
@@ -172,14 +173,12 @@ function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal}:{level:numb
         detected=true;
         const subs=new Set<string>();
         nonEmpty.forEach(l=>{
-          // High-frequency items with poor co-occurrence clustering
           if(l.picksWeek>30&&l.coScore<50) subs.add(l.id);
-          // Low-frequency items in high-traffic zones blocking better candidates
           if(l.picksWeek<5&&l.aisle<=3&&l.velocity!=="A") subs.add(l.id);
-          // Items with high route score (causing many aisle visits)
           if(l.routeScore>3.0&&l.picksWeek>15) subs.add(l.id);
         });
         setSuboptimal(subs);
+        onSuboptimalUpdate(subs.size);
       }
     },900);
 
@@ -206,23 +205,13 @@ function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal}:{level:numb
   return(
     <div ref={containerRef} onWheel={onWheel} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
       style={{flex:1,overflow:"hidden",background:"transparent",cursor:dragging?"grabbing":"grab",position:"relative",zIndex:1}}>
-      {/* Zoom + live picks indicator */}
-      <div style={{position:"absolute",top:12,left:12,zIndex:5,display:"flex",gap:8}}>
+      {/* Zoom indicator */}
+      <div style={{position:"absolute",top:12,left:12,zIndex:5}}>
         <div style={{padding:"5px 12px",borderRadius:"var(--radius-full)",background:"var(--bg-elevated)",border:"1px solid var(--border-medium)",fontSize:11,fontWeight:500,color:"var(--text-secondary)",fontFamily:"var(--font-mono)"}}>
           {Math.round(scale*100)}%
         </div>
-        <div style={{padding:"5px 12px",borderRadius:"var(--radius-full)",background:"var(--bg-elevated)",border:"1px solid var(--border-medium)",fontSize:11,fontWeight:500,display:"flex",alignItems:"center",gap:6}}>
-          <span style={{width:6,height:6,borderRadius:"50%",background:"var(--accent-green)",animation:"pulse 1.5s ease infinite"}}/>
-          <span style={{color:"var(--accent-green)",fontFamily:"var(--font-mono)"}}>{pickCount} picks</span>
-          <span style={{color:"var(--text-tertiary)"}}>live</span>
-        </div>
       </div>
-      {/* Suboptimal alert — fixed position so it's not clipped by overflow:hidden */}
-      {suboptimal.size>0&&(
-        <div style={{position:"fixed",top:70,left:260,zIndex:100}}>
-          <SuboptimalAlert count={suboptimal.size} onViewProposal={onShowProposal}/>
-        </div>
-      )}
+      {/* Suboptimal alert removed — handled by CommandCenter */}
       {/* Zoomable content */}
       <div style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${scale})`,transformOrigin:"0 0",padding:"20px 24px",willChange:"transform"}}>
         <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 14px",borderRadius:"var(--radius-full)",background:"rgba(54,216,158,0.12)",border:"1px solid rgba(54,216,158,0.25)",fontSize:11,fontWeight:600,color:"var(--accent-green)",marginBottom:14}}>
@@ -842,6 +831,81 @@ function Problems(){
   );
 }
 
+/* ═══ COMMAND CENTER — draggable mini dashboard ═══ */
+function CommandCenter({picks,suboptimalCount,newSkuReady,onOpenReslot,onOpenNewSku}:{picks:number;suboptimalCount:number;newSkuReady:boolean;onOpenReslot:()=>void;onOpenNewSku:()=>void}){
+  const[pos,setPos]=useState({x:280,y:80});
+  const[dragging,setDragging]=useState(false);
+  const dragOffset=useRef({x:0,y:0});
+
+  const onDown=(e:React.PointerEvent)=>{
+    setDragging(true);
+    dragOffset.current={x:e.clientX-pos.x,y:e.clientY-pos.y};
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const onMove=(e:React.PointerEvent)=>{
+    if(!dragging)return;
+    setPos({x:e.clientX-dragOffset.current.x,y:e.clientY-dragOffset.current.y});
+  };
+  const onUp=()=>setDragging(false);
+
+  const alerts=[];
+  if(suboptimalCount>0) alerts.push({type:"reslot"as const,msg:`${suboptimalCount} locaties suboptimaal`,color:"var(--accent-red)"});
+  if(newSkuReady) alerts.push({type:"newsku"as const,msg:"12 nieuwe SKUs wachten",color:"var(--accent-cict)"});
+
+  return(
+    <div style={{position:"fixed",left:pos.x,top:pos.y,zIndex:60,animation:"toasterIn 0.4s var(--ease-out)"}}>
+      <div style={{width:260,background:"var(--bg-surface)",border:"1px solid var(--border-medium)",borderRadius:"var(--radius-lg)",boxShadow:"var(--shadow-xl)",overflow:"hidden",userSelect:"none"}}>
+        {/* Drag handle */}
+        <div onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
+          style={{padding:"8px 14px",cursor:dragging?"grabbing":"grab",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid var(--border-light)",background:"var(--bg-card)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{width:6,height:6,borderRadius:"50%",background:"var(--accent-green)",animation:"pulse 2s ease infinite"}}/>
+            <span style={{fontSize:10,fontWeight:600,color:"var(--text-secondary)"}}>Command Center</span>
+          </div>
+          <div style={{display:"flex",gap:3}}>
+            <span style={{width:4,height:4,borderRadius:1,background:"var(--text-tertiary)",opacity:0.4}}/>
+            <span style={{width:4,height:4,borderRadius:1,background:"var(--text-tertiary)",opacity:0.4}}/>
+            <span style={{width:4,height:4,borderRadius:1,background:"var(--text-tertiary)",opacity:0.4}}/>
+          </div>
+        </div>
+
+        {/* Live stats */}
+        <div style={{padding:"10px 14px",display:"flex",gap:8}}>
+          <div style={{flex:1,background:"var(--bg-card)",borderRadius:6,padding:"6px 8px",textAlign:"center"}}>
+            <div style={{fontSize:8,color:"var(--text-tertiary)"}}>LIVE PICKS</div>
+            <div style={{fontSize:16,fontWeight:800,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>{picks}</div>
+          </div>
+          <div style={{flex:1,background:"var(--bg-card)",borderRadius:6,padding:"6px 8px",textAlign:"center"}}>
+            <div style={{fontSize:8,color:"var(--text-tertiary)"}}>ALERTS</div>
+            <div style={{fontSize:16,fontWeight:800,fontFamily:"var(--font-mono)",color:alerts.length>0?"var(--accent-red)":"var(--text-tertiary)"}}>{alerts.length}</div>
+          </div>
+          <div style={{flex:1,background:"var(--bg-card)",borderRadius:6,padding:"6px 8px",textAlign:"center"}}>
+            <div style={{fontSize:8,color:"var(--text-tertiary)"}}>STATUS</div>
+            <div style={{fontSize:10,fontWeight:600,color:"var(--accent-green)",marginTop:2}}>Online</div>
+          </div>
+        </div>
+
+        {/* Alert items */}
+        {alerts.length>0&&(
+          <div style={{padding:"0 14px 10px"}}>
+            {alerts.map((a,i)=>(
+              <button key={i} onClick={a.type==="reslot"?onOpenReslot:onOpenNewSku}
+                style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"7px 10px",marginBottom:4,borderRadius:6,border:`1px solid ${a.color}30`,background:`${a.color}08`,cursor:"pointer",transition:"all 0.15s ease",fontSize:11,fontWeight:500,color:"var(--text-secondary)",fontFamily:"var(--font-sans)"}}
+                onMouseOver={e=>{e.currentTarget.style.background=`${a.color}15`;}}
+                onMouseOut={e=>{e.currentTarget.style.background=`${a.color}08`;}}
+              >
+                <span style={{width:6,height:6,borderRadius:"50%",background:a.color,animation:"pulse 2s ease infinite",flexShrink:0}}/>
+                <span style={{flex:1,textAlign:"left"}}>{a.msg}</span>
+                <span style={{fontSize:10,color:a.color,fontWeight:600}}>→</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ═══ LEGEND ═══ */
 function Legend(){
   return(
@@ -864,9 +928,12 @@ export default function WarehousePage(){
   const[showConfirmToast,setShowConfirmToast]=useState(false);
   const[shouldClearSuboptimal,setShouldClearSuboptimal]=useState(false);
   const[showNewSkuWizard,setShowNewSkuWizard]=useState(false);
+  const[livePicks,setLivePicks]=useState(0);
+  const[suboptimalCount,setSuboptimalCount]=useState(0);
+  const[newSkuReady,setNewSkuReady]=useState(false);
 
-  // Trigger new SKU wizard after 45 seconds
-  useEffect(()=>{const t=setTimeout(()=>setShowNewSkuWizard(true),45000);return()=>clearTimeout(t);},[]);
+  // Trigger new SKU batch notification after 45 seconds
+  useEffect(()=>{const t=setTimeout(()=>setNewSkuReady(true),45000);return()=>clearTimeout(t);},[]);
   const onHover=useCallback((l:Loc|null,x:number,y:number)=>{setHovered(l?{loc:l,x,y}:null);},[]);
 
   return(
@@ -893,15 +960,16 @@ export default function WarehousePage(){
           </div>
         </div>
         <div style={{flex:1,display:"flex",position:"relative",overflow:"hidden"}}>
-          <Map level={level} onHover={onHover} onSelect={setSelected} onShowProposal={()=>{setShowProposal(true);setSelected(null);}} clearSuboptimal={shouldClearSuboptimal}/>
+          <Map level={level} onHover={onHover} onSelect={setSelected} onShowProposal={()=>{setShowProposal(true);setSelected(null);}} clearSuboptimal={shouldClearSuboptimal} onPickUpdate={setLivePicks} onSuboptimalUpdate={setSuboptimalCount}/>
           {showProposal&&<ReslotProposal suboptimalCount={20} onConfirm={()=>{setShowProposal(false);setShowConfirmToast(true);setShouldClearSuboptimal(true);}} onCancel={()=>setShowProposal(false)}/>}
         </div>
         {hovered&&<Tip loc={hovered.loc} x={hovered.x} y={hovered.y}/>}
         <Legend/>
       </div>
-      {selected&&!showProposal&&<Detail loc={selected} onClose={()=>setSelected(null)}/>}
+      {selected&&!showProposal&&!showNewSkuWizard&&<Detail loc={selected} onClose={()=>setSelected(null)}/>}
       {showConfirmToast&&<ConfirmToaster onDone={()=>setShowConfirmToast(false)}/>}
-      {showNewSkuWizard&&<NewSkuWizard onConfirm={()=>{setShowNewSkuWizard(false);setShowConfirmToast(true);}} onCancel={()=>setShowNewSkuWizard(false)}/>}
+      {showNewSkuWizard&&<NewSkuWizard onConfirm={()=>{setShowNewSkuWizard(false);setNewSkuReady(false);setShowConfirmToast(true);}} onCancel={()=>setShowNewSkuWizard(false)}/>}
+      <CommandCenter picks={livePicks} suboptimalCount={suboptimalCount} newSkuReady={newSkuReady} onOpenReslot={()=>{setShowProposal(true);setSelected(null);}} onOpenNewSku={()=>{setShowNewSkuWizard(true);setSelected(null);}}/>
     </div>
   );
 }
