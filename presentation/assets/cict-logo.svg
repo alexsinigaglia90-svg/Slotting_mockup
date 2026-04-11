@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 460" fill="none">
+  <!-- Yellow background square -->
+  <rect x="0" y="0" width="300" height="300" fill="#E2D44A"/>
+
+  <!-- Curved swoosh/arc -->
+  <path d="M 300 0 Q 0 0, 0 300" stroke="#1a1a1a" stroke-width="0" fill="#1a1a1a"/>
+  <path d="M 300 0 C 300 0, 240 5, 180 30 C 120 55, 60 120, 30 180 C 5 240, 0 300, 0 300 L 0 0 Z" fill="#E2D44A"/>
+  <path d="M 280 15 Q 15 15, 15 280" stroke="#1a1a1a" stroke-width="30" fill="none" stroke-linecap="round"/>
+
+  <!-- Large C letter overlapping the yellow square -->
+  <text x="80" y="270" font-size="260" font-weight="900" fill="#1a1a1a" font-family="Arial Black, Arial, Helvetica, sans-serif">C</text>
+
+  <!-- ICT text -->
+  <text x="300" y="270" font-size="220" font-weight="900" fill="#1a1a1a" font-family="Arial Black, Arial, Helvetica, sans-serif" letter-spacing="-8">ICT</text>
+
+  <!-- INNOVATIONS text -->
+  <text x="305" y="350" font-size="82" font-weight="900" fill="#1a1a1a" font-family="Arial Black, Arial, Helvetica, sans-serif" letter-spacing="8">INNOVATIONS</text>
+</svg>
