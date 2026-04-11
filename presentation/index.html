@@ -8,257 +8,329 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-/* ===================== RESET ===================== */
+/* ================================================================
+   RESET & BASE
+   ================================================================ */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth;font-size:16px;overflow-x:hidden}
-body{font-family:'Inter',sans-serif;color:#d1d5db;overflow-x:hidden;background:#0a0b10;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+html{
+  scroll-snap-type:y mandatory;
+  scroll-behavior:smooth;
+  font-size:16px;
+  overflow-x:hidden;
+}
+body{
+  font-family:'Inter',sans-serif;
+  color:#d1d5db;
+  overflow-x:hidden;
+  background:#0a0b10;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
 img{max-width:100%;display:block}
 a{color:inherit;text-decoration:none}
 
-/* ===================== VARIABLES ===================== */
+/* ================================================================
+   CSS CUSTOM PROPERTIES
+   ================================================================ */
 :root{
   --dark:#0a0b10;
-  --dark2:#0e0f16;
   --light:#f8f8fc;
+  --text-dark:#e8e8f0;
+  --text-light:#1a1a2e;
   --yellow:#E2D44A;
   --purple:#8b6fff;
-  --purple-dim:rgba(139,111,255,0.15);
-  --grey-900:#12131c;
-  --grey-800:#1a1b26;
-  --grey-700:#2a2b3a;
   --grey-600:#4a4b5c;
   --grey-500:#6b7280;
   --grey-400:#9ca3af;
-  --grey-300:#d1d5db;
-  --grey-200:#e5e7eb;
   --mono:'JetBrains Mono',monospace;
   --sans:'Inter',sans-serif;
   --ease-out:cubic-bezier(0.22,1,0.36,1);
-  --ease-elastic:cubic-bezier(0.34,1.56,0.64,1);
-  --ease-smooth:cubic-bezier(0.4,0,0.2,1);
 }
 
-/* ===================== SCROLL PROGRESS ===================== */
+/* ================================================================
+   SCROLL PROGRESS BAR
+   ================================================================ */
 #scroll-progress{
   position:fixed;top:0;left:0;height:3px;
-  background:linear-gradient(90deg,var(--yellow),var(--purple));
-  width:0%;z-index:9999;
-  box-shadow:0 0 20px var(--yellow),0 0 60px rgba(226,212,74,0.3);
+  background:linear-gradient(90deg,var(--yellow),#d4c842);
+  width:0%;z-index:10000;
   border-radius:0 2px 2px 0;
+  transition:width 0.08s linear;
 }
 
-/* ===================== NOISE OVERLAY ===================== */
+/* ================================================================
+   NOISE / GRAIN OVERLAY
+   ================================================================ */
 body::after{
   content:'';position:fixed;top:0;left:0;width:100%;height:100%;
-  pointer-events:none;z-index:9998;opacity:0.035;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9998;opacity:0.02;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat:repeat;background-size:256px 256px;
+  mix-blend-mode:overlay;
 }
 
-/* ===================== SECTION BASE ===================== */
+/* ================================================================
+   NAVIGATION DOTS
+   ================================================================ */
+#nav-dots{
+  position:fixed;right:24px;top:50%;transform:translateY(-50%);
+  z-index:9999;display:flex;flex-direction:column;gap:12px;
+}
+.nav-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:rgba(255,255,255,0.12);
+  cursor:pointer;transition:all 0.3s var(--ease-out);
+}
+.nav-dot:hover{background:rgba(255,255,255,0.3)}
+.nav-dot.active{
+  background:var(--yellow);
+  box-shadow:0 0 6px rgba(226,212,74,0.3);
+}
+@media(max-width:768px){
+  #nav-dots{display:none}
+}
+
+/* ================================================================
+   SECTION BASE
+   ================================================================ */
 .sect{
-  position:relative;min-height:100vh;width:100%;
-  display:flex;align-items:center;justify-content:center;
-  padding:100px 6vw;overflow:hidden;
+  position:relative;
+  min-height:100vh;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:100px 6vw;
+  overflow:hidden;
+  scroll-snap-align:start;
+  scroll-snap-stop:always;
 }
-.sect--dark{background:var(--dark);color:var(--grey-300)}
-.sect--light{background:var(--light);color:#1a1b26}
-.sect__inner{max-width:1100px;width:100%;position:relative;z-index:2}
+.sect--dark{background:var(--dark);color:var(--text-dark)}
+.sect--light{background:var(--light);color:var(--text-light)}
+.sect__inner{max-width:1000px;width:100%;position:relative;z-index:2}
+.sect__inner--wide{max-width:1200px;width:100%;position:relative;z-index:2}
 
-/* ===================== TYPOGRAPHY ===================== */
-.headline{font-weight:800;letter-spacing:-0.035em;line-height:1.05;margin-bottom:0.5em}
-.headline--xl{font-size:clamp(2.6rem,6vw,5rem)}
-.headline--lg{font-size:clamp(2rem,4.5vw,3.6rem)}
+/* ================================================================
+   SUBTLE GRADIENT ORB (one per dark section)
+   ================================================================ */
+.orb{
+  position:absolute;border-radius:50%;
+  filter:blur(140px);opacity:0.08;
+  pointer-events:none;z-index:0;
+}
+
+/* ================================================================
+   TYPOGRAPHY
+   ================================================================ */
+.headline{
+  font-weight:800;
+  letter-spacing:-0.04em;
+  line-height:1.05;
+  margin-bottom:0.5em;
+}
+.headline--xl{font-size:clamp(3rem,6vw,5rem)}
+.headline--lg{font-size:clamp(2rem,4vw,3.2rem)}
 .headline--md{font-size:clamp(1.5rem,3vw,2.2rem)}
-.headline--sm{font-size:clamp(1.2rem,2vw,1.6rem)}
-.sub{font-weight:300;font-size:clamp(1rem,1.6vw,1.3rem);line-height:1.6;max-width:700px;margin-bottom:1.5em;opacity:0.88}
+.headline--sm{font-size:clamp(1.2rem,2vw,1.5rem)}
+
+.sub{
+  font-weight:300;
+  font-size:clamp(1rem,1.4vw,1.3rem);
+  line-height:1.7;
+  max-width:700px;
+  margin-bottom:1.5em;
+  opacity:0.85;
+}
 .sect--dark .sub{color:#8a95a8}
 .sect--light .sub{color:var(--grey-600)}
 .sect--dark .headline{color:#f0f1f5}
 .sect--light .headline{color:#0a0b10}
+
 .accent-y{color:var(--yellow)}
 .accent-p{color:var(--purple)}
 .mono{font-family:var(--mono);font-weight:400;font-size:0.85em}
-.body-text{font-weight:400;font-size:clamp(0.95rem,1.4vw,1.08rem);line-height:1.75;max-width:640px;color:var(--grey-500)}
+
+.body-text{
+  font-weight:400;
+  font-size:clamp(0.95rem,1.4vw,1.08rem);
+  line-height:1.75;
+  max-width:640px;
+  color:var(--grey-500);
+}
 .sect--light .body-text{color:var(--grey-600)}
-.label{font-family:var(--mono);font-weight:700;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:1.2em;display:inline-block}
+
+.label{
+  font-family:var(--mono);font-weight:700;font-size:0.7rem;
+  letter-spacing:0.14em;text-transform:uppercase;
+  margin-bottom:1.2em;display:inline-block;
+}
 .sect--dark .label{color:var(--yellow)}
 .sect--light .label{color:var(--purple)}
 
-/* ===================== WORD-BY-WORD ANIMATION ===================== */
-.word-reveal{display:inline-block;overflow:hidden;vertical-align:top;margin-right:0.22em}
-.word-reveal span{display:inline-block;transform:translateY(110%);opacity:0;transition:transform 0.7s var(--ease-elastic),opacity 0.5s var(--ease-out)}
-.word-reveal.is-visible span{transform:translateY(0);opacity:1}
-
-/* ===================== GENERIC REVEAL ===================== */
-.rv{opacity:0;transition:opacity 0.9s var(--ease-out),transform 0.9s var(--ease-out)}
-.rv--up{transform:translateY(50px)}
-.rv--down{transform:translateY(-50px)}
-.rv--left{transform:translateX(-70px)}
-.rv--right{transform:translateX(70px)}
-.rv--scale{transform:scale(0.85);filter:blur(6px);transition:opacity 0.9s var(--ease-out),transform 0.9s var(--ease-out),filter 0.9s var(--ease-out)}
-.rv--blur{filter:blur(12px);transform:scale(0.97);transition:opacity 1s var(--ease-out),transform 1s var(--ease-out),filter 1s var(--ease-out)}
-.rv.is-v{opacity:1;transform:translate(0,0) scale(1);filter:blur(0)}
-
-/* ===================== SHIMMER TEXT ===================== */
-.shimmer{
-  background:linear-gradient(90deg,var(--yellow),#fff,var(--yellow));
-  background-size:200% 100%;
-  -webkit-background-clip:text;background-clip:text;
-  -webkit-text-fill-color:transparent;
-  animation:shimmer 3s ease-in-out infinite;
+/* ================================================================
+   SCREENSHOT TREATMENT
+   ================================================================ */
+.screenshot{
+  border-radius:12px;
+  overflow:hidden;
+  width:100%;
 }
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.sect--dark .screenshot{
+  box-shadow:0 8px 40px rgba(0,0,0,0.2);
+}
+.sect--light .screenshot{
+  box-shadow:0 4px 24px rgba(0,0,0,0.08);
+}
+.screenshot img{
+  width:100%;display:block;
+}
+.screen-caption{
+  font-family:var(--mono);
+  font-size:0.75rem;
+  margin-top:1em;
+  color:var(--grey-500);
+  line-height:1.5;
+}
+.sect--light .screen-caption{color:var(--grey-600)}
 
-/* ===================== GRADIENT MESH BG ===================== */
-.mesh-bg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;overflow:hidden}
-.mesh-orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:0.25;will-change:transform}
-.mesh-orb--1{width:600px;height:600px;background:var(--purple);top:-10%;left:-10%;animation:orbFloat1 18s ease-in-out infinite}
-.mesh-orb--2{width:500px;height:500px;background:var(--yellow);bottom:-15%;right:-10%;animation:orbFloat2 22s ease-in-out infinite}
-.mesh-orb--3{width:400px;height:400px;background:#1e40af;top:40%;left:50%;animation:orbFloat3 15s ease-in-out infinite}
-@keyframes orbFloat1{0%,100%{transform:translate(0,0)}50%{transform:translate(80px,60px)}}
-@keyframes orbFloat2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,-80px)}}
-@keyframes orbFloat3{0%,100%{transform:translate(0,0)}33%{transform:translate(-40px,50px)}66%{transform:translate(50px,-30px)}}
-
-/* ===================== PARTICLES ===================== */
-.particles-container{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}
-.particle{position:absolute;border-radius:50%;background:rgba(226,212,74,0.3);animation:particleDrift linear infinite}
-@keyframes particleDrift{
-  0%{transform:translateY(0) translateX(0);opacity:0}
-  10%{opacity:1}
-  90%{opacity:1}
-  100%{transform:translateY(-100vh) translateX(40px);opacity:0}
+/* ================================================================
+   SCROLL REVEAL
+   ================================================================ */
+.rv{
+  opacity:0;
+  transform:translateY(20px);
+  transition:opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.rv.is-v{
+  opacity:1;
+  transform:translateY(0);
 }
 
-/* ===================== SCREENSHOT CARDS ===================== */
-.screen-card{
-  position:relative;border-radius:12px;overflow:hidden;
-  box-shadow:0 25px 80px rgba(0,0,0,0.5),0 8px 30px rgba(0,0,0,0.3);
-  transform:perspective(1200px) rotateY(0deg) rotateX(0deg);
-  transition:transform 0.4s var(--ease-out),box-shadow 0.4s var(--ease-out);
-}
-.screen-card:hover{
-  transform:perspective(1200px) rotateY(-2deg) rotateX(2deg) translateY(-8px);
-  box-shadow:0 35px 100px rgba(0,0,0,0.6),0 15px 40px rgba(0,0,0,0.4);
-}
-.screen-card img{width:100%;display:block}
-.screen-card::before{
-  content:'';position:absolute;top:0;left:0;width:100%;height:100%;
-  background:linear-gradient(135deg,rgba(139,111,255,0.08),transparent 60%);
-  z-index:1;pointer-events:none;
-}
-.sect--light .screen-card{
-  box-shadow:0 25px 80px rgba(0,0,0,0.12),0 8px 30px rgba(0,0,0,0.08);
-}
-.sect--light .screen-card:hover{
-  box-shadow:0 35px 100px rgba(0,0,0,0.18),0 15px 40px rgba(0,0,0,0.1);
-}
-.screen-caption{font-family:var(--mono);font-size:0.78rem;margin-top:1.2em;opacity:0.6;line-height:1.5}
-
-/* ===================== BULLET / ITEM LISTS ===================== */
+/* ================================================================
+   BULLET LIST
+   ================================================================ */
 .item-list{list-style:none;margin:1.5em 0}
 .item-list li{
-  position:relative;padding:0.8em 0 0.8em 2em;
+  position:relative;padding:0.8em 0 0.8em 1.8em;
   font-size:clamp(0.95rem,1.3vw,1.05rem);line-height:1.6;
-  border-bottom:1px solid rgba(255,255,255,0.06);
+  border-bottom:1px solid rgba(0,0,0,0.05);
 }
-.sect--light .item-list li{border-bottom-color:rgba(0,0,0,0.06)}
+.sect--dark .item-list li{border-bottom-color:rgba(255,255,255,0.05)}
 .item-list li::before{
   content:'';position:absolute;left:0;top:50%;
-  width:8px;height:8px;border-radius:50%;
+  width:6px;height:6px;border-radius:50%;
   background:var(--yellow);transform:translateY(-50%);
 }
 .item-list li:last-child{border-bottom:none}
 
-/* ===================== COLUMNS ===================== */
-.cols{display:grid;gap:3rem;margin-top:2em}
+/* ================================================================
+   COLUMNS & CARDS
+   ================================================================ */
+.cols{display:grid;gap:2.5rem;margin-top:2em}
 .cols--2{grid-template-columns:1fr 1fr}
 .cols--3{grid-template-columns:1fr 1fr 1fr}
 @media(max-width:768px){
   .cols--2,.cols--3{grid-template-columns:1fr}
 }
-.col-card{padding:2em;border-radius:12px;position:relative;overflow:hidden}
-.sect--dark .col-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)}
-.sect--light .col-card{background:#fff;border:1px solid rgba(0,0,0,0.06);box-shadow:0 4px 24px rgba(0,0,0,0.04)}
-.col-card:hover{border-color:var(--yellow)}
-.col-card transition{border-color 0.3s}
 
-/* ===================== STEPS ===================== */
+.col-card{
+  padding:2em;border-radius:12px;
+  transition:transform 0.3s var(--ease-out), border-color 0.3s;
+}
+.sect--dark .col-card{
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.05);
+}
+.sect--light .col-card{
+  background:#fff;
+  border:1px solid rgba(0,0,0,0.06);
+  box-shadow:0 2px 12px rgba(0,0,0,0.03);
+}
+.col-card:hover{
+  border-color:rgba(226,212,74,0.3);
+  transform:translateY(-3px);
+}
+
+/* ================================================================
+   STEPS
+   ================================================================ */
 .steps{counter-reset:step;margin:2em 0}
 .step-item{
   display:flex;gap:1.5em;align-items:flex-start;
-  padding:1.2em 0;position:relative;
+  padding:1.2em 0;
 }
 .step-num{
-  flex-shrink:0;width:44px;height:44px;border-radius:50%;
+  flex-shrink:0;width:40px;height:40px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--mono);font-weight:700;font-size:0.85rem;
-  border:2px solid var(--yellow);color:var(--yellow);
+  font-family:var(--mono);font-weight:700;font-size:0.8rem;
+  border:1.5px solid var(--yellow);color:var(--yellow);
 }
 .step-text{font-size:clamp(0.95rem,1.3vw,1.05rem);line-height:1.6}
 .step-text strong{font-weight:600}
 .sect--dark .step-text{color:var(--grey-400)}
 
-/* ===================== LAYOUT: SPLIT ===================== */
+/* ================================================================
+   SPLIT LAYOUT
+   ================================================================ */
 .split{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
-.split--rev{direction:rtl}
-.split--rev>*{direction:ltr}
 @media(max-width:900px){
   .split{grid-template-columns:1fr;gap:2rem}
-  .split--rev{direction:ltr}
 }
 
-/* ===================== HERO SPECIFIC ===================== */
-#hero{min-height:100vh;display:flex;align-items:center;padding-top:0;padding-bottom:0}
+/* ================================================================
+   HERO
+   ================================================================ */
+#hero{min-height:100vh;padding-top:0;padding-bottom:0}
 #hero .headline{margin-bottom:0.3em}
+
 .hero-badge{
   display:inline-flex;align-items:center;gap:0.6em;
-  padding:0.5em 1.2em;border-radius:100px;
-  background:rgba(226,212,74,0.08);border:1px solid rgba(226,212,74,0.2);
-  font-family:var(--mono);font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;
+  padding:0.45em 1em;border-radius:100px;
+  background:rgba(226,212,74,0.04);border:1px solid rgba(226,212,74,0.1);
+  font-family:var(--mono);font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;
   color:var(--yellow);margin-bottom:2em;
 }
-.hero-badge svg{flex-shrink:0}
+
 .hero-scroll-cue{
   position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
   display:flex;flex-direction:column;align-items:center;gap:0.5em;
-  opacity:0.4;animation:scrollCue 2s ease-in-out infinite;
+  opacity:0.3;animation:scrollCue 2.5s ease-in-out infinite;
+  z-index:3;
 }
-.hero-scroll-cue span{font-size:0.7rem;font-family:var(--mono);letter-spacing:0.1em;text-transform:uppercase}
-@keyframes scrollCue{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
-
-/* ===================== SECTION: VRAAG (pulse bg) ===================== */
-.pulse-bg{
-  position:absolute;top:50%;left:50%;width:600px;height:600px;
-  border-radius:50%;transform:translate(-50%,-50%);
-  background:radial-gradient(circle,rgba(139,111,255,0.12),transparent 70%);
-  animation:pulseGlow 4s ease-in-out infinite;
+.hero-scroll-cue span{font-size:0.65rem;font-family:var(--mono);letter-spacing:0.1em;text-transform:uppercase}
+@keyframes scrollCue{
+  0%,100%{transform:translateX(-50%) translateY(0);opacity:0.3}
+  50%{transform:translateX(-50%) translateY(6px);opacity:0.5}
 }
-@keyframes pulseGlow{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.6}50%{transform:translate(-50%,-50%) scale(1.2);opacity:1}}
 
-/* ===================== CTA BORDER ===================== */
+/* ================================================================
+   CTA SECTION
+   ================================================================ */
 .cta-border{
-  border-top:4px solid var(--yellow);
+  border-top:3px solid var(--yellow);
   padding-top:3em;
 }
 
-/* ===================== CICT LOGO ANIM ===================== */
-.cict-logo-large svg{width:120px;height:120px;margin-bottom:2em}
-.cict-logo-large svg rect{opacity:0;animation:logoRect 1s var(--ease-out) 0.3s forwards}
-.cict-logo-large svg path{stroke-dasharray:100;stroke-dashoffset:100;animation:logoArc 1.5s var(--ease-out) 0.6s forwards}
-.cict-logo-large svg text{opacity:0;animation:logoText 0.8s var(--ease-out) 1s forwards}
-@keyframes logoRect{to{opacity:1}}
-@keyframes logoArc{to{stroke-dashoffset:0}}
-@keyframes logoText{to{opacity:1}}
+/* ================================================================
+   WORD FADE-IN
+   ================================================================ */
+.word-fade .w{
+  display:inline-block;
+  opacity:0;
+  transform:translateY(8px);
+  transition:opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+.word-fade .w.is-v{
+  opacity:1;
+  transform:translateY(0);
+}
 
-/* ===================== COUNTER ANIM ===================== */
-.counter{font-family:var(--mono);font-weight:700;font-size:clamp(2rem,4vw,3.5rem);color:var(--yellow)}
-
-/* ===================== RESPONSIVE ===================== */
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
 @media(max-width:600px){
   .sect{padding:60px 5vw}
-  .headline--xl{font-size:2.2rem}
-  .hero-badge{font-size:0.65rem;padding:0.4em 0.8em}
 }
 </style>
 </head>
@@ -267,142 +339,133 @@ body::after{
 <!-- SCROLL PROGRESS -->
 <div id="scroll-progress"></div>
 
+<!-- NAVIGATION DOTS -->
+<nav id="nav-dots"></nav>
+
 <!-- ============================== 1. HERO ============================== -->
-<section id="hero" class="sect sect--dark">
-  <div class="mesh-bg">
-    <div class="mesh-orb mesh-orb--1"></div>
-    <div class="mesh-orb mesh-orb--2"></div>
-    <div class="mesh-orb mesh-orb--3"></div>
-  </div>
-  <div class="particles-container" id="hero-particles"></div>
-  <div class="sect__inner">
-    <div class="hero-badge rv rv--up" data-delay="0">
-      <img src="assets/cict-logo.png" alt="CICT Innovations" style="height:28px;width:auto;"/>
+<section id="hero" class="sect sect--dark" data-label="Hero">
+  <div class="orb" style="width:600px;height:600px;background:var(--purple);top:-15%;right:-10%"></div>
+  <div class="sect__inner" style="position:relative;z-index:3">
+    <div class="hero-badge rv">
+      <img src="assets/cict-logo.png" alt="CICT Innovations" style="height:24px;width:auto;"/>
       CICT Innovations
     </div>
-    <h1 class="headline headline--xl word-anim" data-stagger="60">Elke stap telt. Letterlijk.</h1>
-    <p class="sub rv rv--up" data-delay="400">ISM analyseert waar elk product staat — en waar het zou moeten staan. Continu, autonoom, en meetbaar.</p>
+    <h1 class="headline headline--xl word-fade">Elke stap telt. <span class="accent-y">Letterlijk.</span></h1>
+    <p class="sub rv">ISM analyseert waar elk product staat — en waar het zou moeten staan. Continu, autonoom, en meetbaar.</p>
   </div>
   <div class="hero-scroll-cue">
     <span>Scroll</span>
-    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 4v12M4 10l6 6 6-6"/></svg>
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v10M3 8l5 5 5-5"/></svg>
   </div>
 </section>
 
 <!-- ============================== 2. DE UITDAGING ============================== -->
-<section class="sect sect--light">
+<section class="sect sect--light" data-label="Probleem">
   <div class="sect__inner">
-    <span class="label rv rv--up">Het probleem</span>
-    <h2 class="headline headline--lg word-anim" data-stagger="40">Slotting is het meest onderschatte probleem in warehouse operatie</h2>
-    <p class="sub rv rv--up" data-delay="200">De meeste magazijnen slotten op ervaring en gewoonte. Niet op data. Het resultaat: pickers die structureel meer lopen dan nodig.</p>
+    <span class="label rv">Het probleem</span>
+    <h2 class="headline headline--lg word-fade">Slotting is het meest onderschatte probleem in warehouse operatie</h2>
+    <p class="sub rv">De meeste magazijnen slotten op ervaring en gewoonte. Niet op data. Het resultaat: pickers die structureel meer lopen dan nodig.</p>
     <ul class="item-list">
-      <li class="rv rv--left" data-delay="100">Producten die altijd samen besteld worden maar gangpaden apart staan</li>
-      <li class="rv rv--left" data-delay="200">Snellopers op moeilijk bereikbare posities</li>
-      <li class="rv rv--left" data-delay="300">Veranderende orderpatronen die pas na weken zichtbaar worden</li>
+      <li class="rv">Producten die altijd samen besteld worden maar gangpaden apart staan</li>
+      <li class="rv">Snellopers op moeilijk bereikbare posities</li>
+      <li class="rv">Veranderende orderpatronen die pas na weken zichtbaar worden</li>
     </ul>
   </div>
 </section>
 
 <!-- ============================== 3. DE VRAAG ============================== -->
-<section class="sect sect--dark" style="text-align:center">
-  <div class="pulse-bg"></div>
-  <div class="sect__inner" style="display:flex;flex-direction:column;align-items:center">
-    <span class="label rv rv--up">De vraag</span>
-    <h2 class="headline headline--xl word-anim" data-stagger="50" style="max-width:900px">Wat als je warehouse zichzelf kon optimaliseren?</h2>
-    <p class="sub rv rv--up" data-delay="300" style="text-align:center">Niet een keer per kwartaal. Niet op basis van onderbuikgevoel. Maar continu, gebaseerd op wat er werkelijk gepickt wordt.</p>
+<section class="sect sect--dark" data-label="Vraag" style="text-align:center">
+  <div class="orb" style="width:700px;height:700px;background:var(--purple);top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+  <div class="sect__inner" style="display:flex;flex-direction:column;align-items:center;position:relative;z-index:3">
+    <span class="label rv">De vraag</span>
+    <h2 class="headline headline--xl word-fade" style="max-width:900px">Wat als je warehouse zichzelf kon <span class="accent-y">optimaliseren</span>?</h2>
+    <p class="sub rv" style="text-align:center">Niet een keer per kwartaal. Niet op basis van onderbuikgevoel. Maar continu, gebaseerd op wat er werkelijk gepickt wordt.</p>
   </div>
 </section>
 
 <!-- ============================== 4. ONZE AANPAK ============================== -->
-<section class="sect sect--light">
+<section class="sect sect--light" data-label="Aanpak">
   <div class="sect__inner">
-    <span class="label rv rv--up">Onze aanpak</span>
-    <h2 class="headline headline--lg rv rv--up" data-delay="100">Wetenschap, geen magie</h2>
-    <p class="sub rv rv--up" data-delay="200">ISM combineert twee bewezen wetenschappelijke disciplines.</p>
+    <span class="label rv">Onze aanpak</span>
+    <h2 class="headline headline--lg rv">Wetenschap, geen magie</h2>
+    <p class="sub rv">ISM combineert twee bewezen wetenschappelijke disciplines.</p>
     <div class="cols cols--2">
-      <div class="col-card rv rv--left" data-delay="100">
+      <div class="col-card rv">
         <h3 class="headline headline--sm" style="margin-bottom:0.8em"><span class="accent-p">Machine Learning</span></h3>
         <p class="body-text">Voorspelt welke producten samen gepickt worden, hoe de vraag verschuift, en welke artikelen sneller of langzamer gaan lopen.</p>
       </div>
-      <div class="col-card rv rv--right" data-delay="200">
+      <div class="col-card rv">
         <h3 class="headline headline--sm" style="margin-bottom:0.8em"><span class="accent-y">Operations Research</span></h3>
         <p class="body-text">Berekent de optimale plaatsing per product, de effici&euml;ntste pickroute, en de beste verdeling over zones.</p>
       </div>
     </div>
-    <p class="body-text rv rv--up" data-delay="400" style="margin-top:2em;text-align:center;max-width:100%;font-weight:600;color:var(--grey-600)">Elke suggestie is traceerbaar. Geen black box.</p>
+    <p class="body-text rv" style="margin-top:2em;text-align:center;max-width:100%;font-weight:600;color:var(--grey-600)">Elke suggestie is traceerbaar. Geen black box.</p>
   </div>
 </section>
 
 <!-- ============================== 5. HET PLATFORM ============================== -->
-<section class="sect sect--dark">
-  <div class="mesh-bg">
-    <div class="mesh-orb" style="width:500px;height:500px;background:var(--purple);top:20%;right:-15%;filter:blur(140px);opacity:0.15;animation:orbFloat2 20s ease-in-out infinite"></div>
-  </div>
-  <div class="particles-container" data-particles="8"></div>
-  <div class="sect__inner">
-    <div class="split">
-      <div>
-        <span class="label rv rv--up">Het platform</span>
-        <h2 class="headline headline--lg rv rv--up" data-delay="100">Gebouwd om mee te werken</h2>
-        <p class="sub rv rv--up" data-delay="200">ISM is middleware — het zit tussen het WMS en de werkvloer. Geen vervanging, een versterking.</p>
-        <p class="screen-caption rv rv--up" data-delay="300">De warehouse map toont elke locatie, elke SKU, elke pickfrequentie. Interactief en real-time.</p>
+<section class="sect sect--dark" data-label="Platform">
+  <div class="orb" style="width:500px;height:500px;background:var(--yellow);bottom:-10%;left:-5%"></div>
+  <div class="sect__inner--wide" style="position:relative;z-index:3">
+    <div style="max-width:1000px">
+      <span class="label rv">Het platform</span>
+      <h2 class="headline headline--lg rv">Gebouwd om mee te werken</h2>
+      <p class="sub rv">ISM is middleware — het zit tussen het WMS en de werkvloer. Geen vervanging, een versterking.</p>
+    </div>
+    <div class="rv" style="margin-top:2em">
+      <div class="screenshot">
+        <img src="assets/screenshots/warehouse-map.png" alt="Warehouse Map — ISM" loading="lazy">
       </div>
-      <div class="rv rv--right" data-delay="300">
-        <div class="screen-card">
-          <img src="assets/screenshots/warehouse-map.png" alt="Warehouse Map — ISM" loading="lazy">
-        </div>
-      </div>
+      <p class="screen-caption">De warehouse map toont elke locatie, elke SKU, elke pickfrequentie. Interactief en real-time.</p>
     </div>
   </div>
 </section>
 
 <!-- ============================== 6. LIVE MONITORING ============================== -->
-<section class="sect sect--light">
-  <div class="sect__inner">
-    <div class="split split--rev">
-      <div>
-        <span class="label rv rv--up">Live monitoring</span>
-        <h2 class="headline headline--lg rv rv--up" data-delay="100">Het systeem kijkt mee</h2>
-        <p class="sub rv rv--up" data-delay="200">ISM volgt elke pick en detecteert automatisch wanneer de huidige slotting niet meer optimaal is.</p>
-        <ul class="item-list">
-          <li class="rv rv--up" data-delay="250">Real-time pick monitoring</li>
-          <li class="rv rv--up" data-delay="350">Automatische suboptimale detectie</li>
-          <li class="rv rv--up" data-delay="450">Proactieve herslotting suggesties</li>
-        </ul>
-      </div>
-      <div class="rv rv--left" data-delay="200">
-        <div class="screen-card">
-          <img src="assets/screenshots/command-center.png" alt="Command Center — ISM" loading="lazy">
-        </div>
+<section class="sect sect--light" data-label="Monitoring">
+  <div class="sect__inner--wide">
+    <div style="max-width:1000px">
+      <span class="label rv">Live monitoring</span>
+      <h2 class="headline headline--lg rv">Het systeem kijkt mee</h2>
+      <p class="sub rv">ISM volgt elke pick en detecteert automatisch wanneer de huidige slotting niet meer optimaal is.</p>
+    </div>
+    <div class="rv" style="margin-top:2em">
+      <div class="screenshot">
+        <img src="assets/screenshots/command-center.png" alt="Command Center — ISM" loading="lazy">
       </div>
     </div>
+    <ul class="item-list" style="max-width:1000px;margin-top:2em">
+      <li class="rv">Real-time pick monitoring</li>
+      <li class="rv">Automatische suboptimale detectie</li>
+      <li class="rv">Proactieve herslotting suggesties</li>
+    </ul>
   </div>
 </section>
 
 <!-- ============================== 7. HERSLOTTING ============================== -->
-<section class="sect sect--dark">
-  <div class="mesh-bg">
-    <div class="mesh-orb" style="width:450px;height:450px;background:var(--yellow);top:60%;left:-10%;filter:blur(130px);opacity:0.1;animation:orbFloat1 16s ease-in-out infinite"></div>
-  </div>
-  <div class="sect__inner" style="text-align:center;display:flex;flex-direction:column;align-items:center">
-    <span class="label rv rv--up">Herslotting</span>
-    <h2 class="headline headline--lg rv rv--up" data-delay="100">Van inzicht naar actie</h2>
-    <p class="sub rv rv--up" data-delay="200" style="text-align:center">Wanneer het systeem een verbetering ziet, toont het exact welke producten waar naartoe moeten — en waarom.</p>
-    <div class="rv rv--scale" data-delay="300" style="margin:2em auto;max-width:800px;width:100%">
-      <div class="screen-card">
+<section class="sect sect--dark" data-label="Herslotting">
+  <div class="orb" style="width:450px;height:450px;background:var(--yellow);top:60%;left:-8%"></div>
+  <div class="sect__inner--wide" style="position:relative;z-index:3">
+    <div style="text-align:center;max-width:1000px;margin:0 auto">
+      <span class="label rv">Herslotting</span>
+      <h2 class="headline headline--lg rv">Van inzicht naar actie</h2>
+      <p class="sub rv" style="text-align:center;margin-left:auto;margin-right:auto">Wanneer het systeem een verbetering ziet, toont het exact welke producten waar naartoe moeten — en waarom.</p>
+    </div>
+    <div class="rv" style="margin:2em auto;max-width:1000px">
+      <div class="screenshot">
         <img src="assets/screenshots/reslot-proposal.png" alt="Reslot Proposal — ISM" loading="lazy">
       </div>
     </div>
-    <div class="steps" style="max-width:600px;text-align:left;width:100%">
-      <div class="step-item rv rv--up" data-delay="400">
+    <div class="steps" style="max-width:600px;margin:2em auto 0;text-align:left">
+      <div class="step-item rv">
         <div class="step-num">1</div>
         <div class="step-text"><strong>Detectie:</strong> het systeem signaleert suboptimale locaties</div>
       </div>
-      <div class="step-item rv rv--up" data-delay="500">
+      <div class="step-item rv">
         <div class="step-num">2</div>
         <div class="step-text"><strong>Voorstel:</strong> concrete verplaatsingen met onderbouwing</div>
       </div>
-      <div class="step-item rv rv--up" data-delay="600">
+      <div class="step-item rv">
         <div class="step-num">3</div>
         <div class="step-text"><strong>Bevestiging:</strong> hold-to-slot stuurt de instructie naar het WMS</div>
       </div>
@@ -411,38 +474,37 @@ body::after{
 </section>
 
 <!-- ============================== 8. CORRELATIE ANALYSE ============================== -->
-<section class="sect sect--light">
-  <div class="sect__inner" style="text-align:center;display:flex;flex-direction:column;align-items:center">
-    <span class="label rv rv--up">Correlatie analyse</span>
-    <h2 class="headline headline--lg rv rv--up" data-delay="100">Het brein achter de beslissingen</h2>
-    <p class="sub rv rv--up" data-delay="200" style="text-align:center">Een levende grafiek van productrelaties — gebouwd op echte orderdata, niet op aannames.</p>
-    <div class="rv rv--blur" data-delay="300" style="margin:2em auto;max-width:800px;width:100%">
-      <div class="screen-card">
+<section class="sect sect--light" data-label="Analyse">
+  <div class="sect__inner--wide" style="text-align:center">
+    <div style="max-width:1000px;margin:0 auto">
+      <span class="label rv">Correlatie analyse</span>
+      <h2 class="headline headline--lg rv">Het brein achter de beslissingen</h2>
+      <p class="sub rv" style="text-align:center;margin-left:auto;margin-right:auto">Een levende grafiek van productrelaties — gebouwd op echte orderdata, niet op aannames.</p>
+    </div>
+    <div class="rv" style="margin:2em auto;max-width:1000px">
+      <div class="screenshot">
         <img src="assets/screenshots/neural-graph.png" alt="Neural Graph — ISM" loading="lazy">
       </div>
+      <p class="screen-caption">Co-occurrence clusters, affiniteitsanalyse, en velocity classificatie — visueel gemaakt.</p>
     </div>
-    <p class="screen-caption rv rv--up" data-delay="500">Co-occurrence clusters, affiniteitsanalyse, en velocity classificatie — visueel gemaakt.</p>
   </div>
 </section>
 
-<!-- ============================== 9. WAT DIT BETEKENT ============================== -->
-<section class="sect sect--dark">
-  <div class="mesh-bg">
-    <div class="mesh-orb" style="width:600px;height:600px;background:var(--yellow);top:-20%;left:30%;filter:blur(150px);opacity:0.08;animation:orbFloat3 24s ease-in-out infinite"></div>
-  </div>
-  <div class="particles-container" data-particles="6"></div>
-  <div class="sect__inner" style="text-align:center;display:flex;flex-direction:column;align-items:center">
-    <span class="label rv rv--up">Impact</span>
-    <h2 class="headline headline--lg word-anim" data-stagger="45" style="max-width:800px">De impact berekenen we samen</h2>
-    <p class="sub rv rv--up" data-delay="300" style="text-align:center">Wij doen geen beloftes op basis van simulatiedata. De echte impact meten we op jullie warehouse, met jullie orders, met jullie producten.</p>
+<!-- ============================== 9. IMPACT ============================== -->
+<section class="sect sect--dark" data-label="Impact">
+  <div class="orb" style="width:500px;height:500px;background:var(--purple);top:20%;right:-10%"></div>
+  <div class="sect__inner" style="text-align:center;display:flex;flex-direction:column;align-items:center;position:relative;z-index:3">
+    <span class="label rv">Impact</span>
+    <h2 class="headline headline--lg word-fade" style="max-width:800px">De impact berekenen we <span class="accent-y">samen</span></h2>
+    <p class="sub rv" style="text-align:center">Wij doen geen beloftes op basis van simulatiedata. De echte impact meten we op jullie warehouse, met jullie orders, met jullie producten.</p>
     <div class="cols cols--3" style="margin-top:2.5em;max-width:900px">
-      <div class="col-card rv rv--up" data-delay="200" style="text-align:left">
+      <div class="col-card rv" style="text-align:left">
         <p class="body-text" style="max-width:100%">Jullie data bepaalt het resultaat — niet onze demo</p>
       </div>
-      <div class="col-card rv rv--up" data-delay="350" style="text-align:left">
+      <div class="col-card rv" style="text-align:left">
         <p class="body-text" style="max-width:100%">Elke parameter is instelbaar op jullie situatie</p>
       </div>
-      <div class="col-card rv rv--up" data-delay="500" style="text-align:left">
+      <div class="col-card rv" style="text-align:left">
         <p class="body-text" style="max-width:100%">Transparante methodiek — jullie zien exact hoe de berekening werkt</p>
       </div>
     </div>
@@ -450,23 +512,23 @@ body::after{
 </section>
 
 <!-- ============================== 10. SCHAAL ============================== -->
-<section class="sect sect--light">
+<section class="sect sect--light" data-label="Schaal">
   <div class="sect__inner">
     <div style="text-align:center;margin-bottom:2em">
-      <span class="label rv rv--up">Schaalbaarheid</span>
-      <h2 class="headline headline--lg rv rv--up" data-delay="100">E&eacute;n Platform. Elk Warehouse.</h2>
-      <p class="sub rv rv--up" data-delay="200" style="margin-left:auto;margin-right:auto;text-align:center">Per locatie configureerbaar, centraal bestuurbaar. Van pilot op &eacute;&eacute;n DC tot uitrol over de hele organisatie.</p>
+      <span class="label rv">Schaalbaarheid</span>
+      <h2 class="headline headline--lg rv">E&eacute;n platform. Elk warehouse.</h2>
+      <p class="sub rv" style="margin-left:auto;margin-right:auto;text-align:center">Per locatie configureerbaar, centraal bestuurbaar. Van pilot op &eacute;&eacute;n DC tot uitrol over de hele organisatie.</p>
     </div>
     <div class="cols cols--3">
-      <div class="col-card rv rv--up" data-delay="100">
+      <div class="col-card rv">
         <h3 class="headline headline--sm" style="margin-bottom:0.5em"><span class="accent-p">Lokaal</span></h3>
         <p class="body-text" style="max-width:100%">Eigen layout, eigen ML-modellen per warehouse</p>
       </div>
-      <div class="col-card rv rv--up" data-delay="250">
+      <div class="col-card rv">
         <h3 class="headline headline--sm" style="margin-bottom:0.5em"><span class="accent-y">Centraal</span></h3>
         <p class="body-text" style="max-width:100%">Uniforme rapportage en benchmarking</p>
       </div>
-      <div class="col-card rv rv--up" data-delay="400">
+      <div class="col-card rv">
         <h3 class="headline headline--sm" style="margin-bottom:0.5em"><span class="accent-p">Integratie</span></h3>
         <p class="body-text" style="max-width:100%">Standaard data-import, geen IT-project</p>
       </div>
@@ -475,41 +537,39 @@ body::after{
 </section>
 
 <!-- ============================== 11. CICT ============================== -->
-<section class="sect sect--dark">
-  <div class="mesh-bg">
-    <div class="mesh-orb" style="width:500px;height:500px;background:var(--purple);top:30%;left:40%;filter:blur(160px);opacity:0.12;animation:orbFloat1 25s ease-in-out infinite"></div>
-  </div>
-  <div class="sect__inner" style="text-align:center;display:flex;flex-direction:column;align-items:center">
-    <div class="cict-logo-large rv rv--scale" data-delay="0">
+<section class="sect sect--dark" data-label="CICT">
+  <div class="orb" style="width:600px;height:600px;background:var(--yellow);top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+  <div class="sect__inner" style="text-align:center;display:flex;flex-direction:column;align-items:center;position:relative;z-index:3">
+    <div class="rv">
       <img src="assets/cict-logo.png" alt="CICT Innovations" style="height:120px;width:auto;margin-bottom:2em;"/>
     </div>
-    <h2 class="headline headline--lg rv rv--up" data-delay="200">CICT Innovations</h2>
-    <p class="sub rv rv--up" data-delay="300" style="text-align:center">Wij bouwen software die operationele complexiteit vertaalt naar meetbare resultaten.</p>
-    <p class="body-text rv rv--up" data-delay="400" style="font-weight:600;font-size:1.15rem;color:var(--grey-300);max-width:100%;text-align:center">Geen platforms die alleen demo's overleven. Platforms die productie overleven.</p>
+    <h2 class="headline headline--lg rv">CICT Innovations</h2>
+    <p class="sub rv" style="text-align:center">Wij bouwen software die operationele complexiteit vertaalt naar meetbare resultaten.</p>
+    <p class="body-text rv" style="font-weight:600;font-size:1.15rem;color:var(--text-dark);max-width:100%;text-align:center">Geen platforms die alleen demo's overleven. Platforms die productie overleven.</p>
   </div>
 </section>
 
 <!-- ============================== 12. VOLGENDE STAP ============================== -->
-<section class="sect sect--light">
+<section class="sect sect--light" data-label="Contact">
   <div class="sect__inner cta-border" style="text-align:center;display:flex;flex-direction:column;align-items:center">
-    <span class="label rv rv--up">Volgende stap</span>
-    <h2 class="headline headline--lg word-anim" data-stagger="45" style="max-width:800px">Laat ons het tonen op jullie data</h2>
-    <p class="sub rv rv--up" data-delay="300" style="text-align:center">Een pilot op &eacute;&eacute;n warehouse. Jullie data, jullie producten, jullie resultaat.</p>
+    <span class="label rv">Volgende stap</span>
+    <h2 class="headline headline--lg word-fade" style="max-width:800px">Laat ons het tonen op <span class="accent-y">jullie data</span></h2>
+    <p class="sub rv" style="text-align:center">Een pilot op &eacute;&eacute;n warehouse. Jullie data, jullie producten, jullie resultaat.</p>
     <div class="steps" style="max-width:620px;text-align:left;width:100%;margin-top:1em">
-      <div class="step-item rv rv--up" data-delay="200">
+      <div class="step-item rv">
         <div class="step-num" style="border-color:var(--purple);color:var(--purple)">1</div>
         <div class="step-text" style="color:var(--grey-600)"><strong style="color:#0a0b10">Wij ontvangen een dataset</strong> — orderhistorie en layout</div>
       </div>
-      <div class="step-item rv rv--up" data-delay="350">
+      <div class="step-item rv">
         <div class="step-num" style="border-color:var(--purple);color:var(--purple)">2</div>
         <div class="step-text" style="color:var(--grey-600)"><strong style="color:#0a0b10">ISM draait op jullie data</strong> — binnen weken</div>
       </div>
-      <div class="step-item rv rv--up" data-delay="500">
+      <div class="step-item rv">
         <div class="step-num" style="border-color:var(--purple);color:var(--purple)">3</div>
         <div class="step-text" style="color:var(--grey-600)"><strong style="color:#0a0b10">Samen beoordelen we het resultaat</strong> en de business case</div>
       </div>
     </div>
-    <p class="rv rv--up" data-delay="650" style="margin-top:2.5em;font-weight:600;font-size:1.1rem;color:var(--grey-600)">Geen commitment. <span class="shimmer" style="font-weight:800">Wel inzicht.</span></p>
+    <p class="rv" style="margin-top:2.5em;font-weight:600;font-size:1.1rem;color:var(--grey-600)">Geen commitment. <span style="color:var(--yellow);font-weight:800">Wel inzicht.</span></p>
   </div>
 </section>
 
@@ -518,122 +578,158 @@ body::after{
 (function(){
   'use strict';
 
-  /* ---- Scroll progress ---- */
+  /* ================================================================
+     SCROLL PROGRESS BAR
+     ================================================================ */
   const prog = document.getElementById('scroll-progress');
   function updateProgress(){
     const h = document.documentElement.scrollHeight - window.innerHeight;
     prog.style.width = h > 0 ? (window.scrollY / h * 100) + '%' : '0%';
   }
-  window.addEventListener('scroll', updateProgress, {passive:true});
 
-  /* ---- Particles ---- */
-  function createParticles(container, count){
-    for(let i=0;i<count;i++){
-      const p = document.createElement('div');
-      p.className = 'particle';
-      const size = Math.random()*3 + 1;
-      p.style.cssText = `
-        width:${size}px;height:${size}px;
-        left:${Math.random()*100}%;
-        top:${Math.random()*100 + 100}%;
-        animation-duration:${Math.random()*12+8}s;
-        animation-delay:${Math.random()*8}s;
-        opacity:0;
-      `;
-      container.appendChild(p);
-    }
-  }
-  // Hero particles
-  const heroPart = document.getElementById('hero-particles');
-  if(heroPart) createParticles(heroPart, 18);
-  // Other particle containers
-  document.querySelectorAll('.particles-container[data-particles]').forEach(c=>{
-    createParticles(c, parseInt(c.dataset.particles)||8);
-  });
+  /* ================================================================
+     NAVIGATION DOTS
+     ================================================================ */
+  const sections = document.querySelectorAll('.sect');
+  const navDots = document.getElementById('nav-dots');
 
-  /* ---- Word-by-word animation ---- */
-  document.querySelectorAll('.word-anim').forEach(el=>{
-    const text = el.textContent.trim();
-    const stagger = parseInt(el.dataset.stagger)||50;
-    el.textContent = '';
-    text.split(/\s+/).forEach((word, i)=>{
-      const wrapper = document.createElement('span');
-      wrapper.className = 'word-reveal';
-      const inner = document.createElement('span');
-      inner.textContent = word;
-      inner.style.transitionDelay = (i * stagger) + 'ms';
-      wrapper.appendChild(inner);
-      el.appendChild(wrapper);
-      // Add space
-      if(i < text.split(/\s+/).length - 1){
-        el.appendChild(document.createTextNode(' '));
-      }
+  sections.forEach(function(sect, i){
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot';
+    dot.addEventListener('click', function(){
+      sect.scrollIntoView({behavior:'smooth'});
     });
+    navDots.appendChild(dot);
   });
 
-  /* ---- IntersectionObserver for reveals ---- */
-  const observer = new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{
+  const dots = navDots.querySelectorAll('.nav-dot');
+
+  function updateActiveDot(){
+    var scrollY = window.scrollY;
+    var vh = window.innerHeight;
+    var activeIdx = 0;
+    sections.forEach(function(sect, i){
+      if(scrollY >= sect.offsetTop - vh * 0.4) activeIdx = i;
+    });
+    dots.forEach(function(d, i){
+      d.classList.toggle('active', i === activeIdx);
+    });
+  }
+
+  /* ================================================================
+     INTERSECTION OBSERVER FOR REVEALS
+     ================================================================ */
+  var staggerCounters = new WeakMap();
+
+  var observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
       if(entry.isIntersecting){
-        const el = entry.target;
-        const delay = parseInt(el.dataset.delay)||0;
-        // rv elements
-        if(el.classList.contains('rv')){
-          setTimeout(()=>el.classList.add('is-v'), delay);
+        var el = entry.target;
+
+        // Find parent section to stagger siblings
+        var sect = el.closest('.sect');
+        if(!staggerCounters.has(sect)){
+          staggerCounters.set(sect, 0);
         }
-        // word-anim elements (parent)
-        if(el.classList.contains('word-anim') || el.querySelectorAll('.word-reveal').length > 0){
-          const target = el.classList.contains('word-anim') ? el : el;
-          setTimeout(()=>{
-            target.querySelectorAll('.word-reveal').forEach(w=>w.classList.add('is-visible'));
-          }, delay);
-        }
+        var idx = staggerCounters.get(sect);
+        staggerCounters.set(sect, idx + 1);
+
+        var delay = idx * 100;
+        setTimeout(function(){
+          el.classList.add('is-v');
+        }, delay);
+
         observer.unobserve(el);
       }
     });
-  }, {threshold:0.15, rootMargin:'0px 0px -60px 0px'});
+  }, {threshold:0.1, rootMargin:'0px 0px -40px 0px'});
 
-  // Observe all rv + word-anim elements
-  document.querySelectorAll('.rv, .word-anim').forEach(el=>observer.observe(el));
-
-  /* ---- Mouse parallax on screen-cards ---- */
-  document.querySelectorAll('.screen-card').forEach(card=>{
-    card.addEventListener('mousemove', e=>{
-      const rect = card.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5;
-      const y = (e.clientY - rect.top) / rect.height - 0.5;
-      card.style.transform = `perspective(1200px) rotateY(${x*6}deg) rotateX(${-y*6}deg) translateY(-4px)`;
-    });
-    card.addEventListener('mouseleave', ()=>{
-      card.style.transform = '';
-    });
+  document.querySelectorAll('.rv').forEach(function(el){
+    observer.observe(el);
   });
 
-  /* ---- Hover micro-animations on col-cards ---- */
-  document.querySelectorAll('.col-card').forEach(card=>{
-    card.style.transition = 'transform 0.3s var(--ease-out), border-color 0.3s, box-shadow 0.3s';
-    card.addEventListener('mouseenter', ()=>{
-      card.style.transform = 'translateY(-4px)';
-    });
-    card.addEventListener('mouseleave', ()=>{
-      card.style.transform = '';
-    });
+  /* ================================================================
+     WORD FADE-IN ANIMATION
+     ================================================================ */
+  document.querySelectorAll('.word-fade').forEach(function(el){
+    var html = el.innerHTML;
+    // Wrap each text node word in a span, preserve HTML tags
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+
+    function processNode(node){
+      if(node.nodeType === 3){
+        // text node
+        var words = node.textContent.split(/(\s+)/);
+        var frag = document.createDocumentFragment();
+        words.forEach(function(w){
+          if(/^\s+$/.test(w)){
+            frag.appendChild(document.createTextNode(w));
+          } else if(w){
+            var span = document.createElement('span');
+            span.className = 'w';
+            span.textContent = w;
+            frag.appendChild(span);
+          }
+        });
+        return frag;
+      }
+      return null;
+    }
+
+    function walk(parent){
+      var children = Array.from(parent.childNodes);
+      children.forEach(function(child){
+        if(child.nodeType === 3){
+          var frag = processNode(child);
+          if(frag) parent.replaceChild(frag, child);
+        } else if(child.nodeType === 1){
+          walk(child);
+        }
+      });
+    }
+
+    walk(tmp);
+    el.innerHTML = tmp.innerHTML;
   });
 
-  /* ---- Parallax layers on scroll ---- */
-  const meshOrbs = document.querySelectorAll('.mesh-orb');
-  let ticking = false;
-  function parallaxTick(){
-    const sy = window.scrollY;
-    meshOrbs.forEach((orb, i)=>{
-      const speed = [0.03, -0.02, 0.015][i % 3];
-      orb.style.transform = `translate(${Math.sin(sy*0.001 + i)*30}px, ${sy * speed}px)`;
+  // Observe word-fade headlines
+  var wordObserver = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        var words = entry.target.querySelectorAll('.w');
+        words.forEach(function(w, i){
+          setTimeout(function(){
+            w.classList.add('is-v');
+          }, i * 60);
+        });
+        wordObserver.unobserve(entry.target);
+      }
     });
-    ticking = false;
+  }, {threshold:0.15});
+
+  document.querySelectorAll('.word-fade').forEach(function(el){
+    wordObserver.observe(el);
+  });
+
+  /* ================================================================
+     SCROLL HANDLER
+     ================================================================ */
+  var ticking = false;
+  function onScroll(){
+    if(!ticking){
+      ticking = true;
+      requestAnimationFrame(function(){
+        updateProgress();
+        updateActiveDot();
+        ticking = false;
+      });
+    }
   }
-  window.addEventListener('scroll', ()=>{
-    if(!ticking){ticking=true;requestAnimationFrame(parallaxTick)}
-  }, {passive:true});
+
+  window.addEventListener('scroll', onScroll, {passive:true});
+  updateProgress();
+  updateActiveDot();
 
 })();
 </script>
