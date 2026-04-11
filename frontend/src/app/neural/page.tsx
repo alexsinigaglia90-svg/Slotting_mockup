@@ -1,425 +1,384 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState } from "react";
 
-/* ═══ NODE DATA ═══ */
-interface GNode {
-  id: string;
-  label: string;
-  type: "sku" | "cluster" | "aisle" | "rule";
-  cluster: string;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  color: string;
-  activity: number; // 0-1, pulsing
-  picks: number;
-}
+/* ═══ ULTRA DENSE NEURAL MESH ═══ */
 
-interface GEdge {
-  from: string;
-  to: string;
-  weight: number; // 0-1
-  type: "co-occurrence" | "assignment" | "cluster" | "rule";
-  active: boolean;
-}
+interface N { id:number;x:number;y:number;vx:number;vy:number;r:number;label:string;group:number;color:string;a:number;picks:number;targetX:number;targetY:number; }
+interface E { from:number;to:number;w:number; }
 
-const CLUSTERS = [
-  { id: "cl-schoonmaak", label: "Schoonmaak", color: "#34d89e", skus: ["Afwasmiddel", "WC-Reiniger", "Schoonmaakdoekjes", "Allesreiniger", "Waspoeder"] },
-  { id: "cl-beauty", label: "Beauty Basics", color: "#e879a8", skus: ["Shampoo", "Douchegel", "Handcrème", "Tandpasta", "Deodorant"] },
-  { id: "cl-snacks", label: "Snacks & Snoep", color: "#f0c040", skus: ["Chips Paprika", "Chocoladereep", "Nootjes Mix", "Popcorn", "Koekjes"] },
-  { id: "cl-tuin", label: "Tuin & Buiten", color: "#5ba8ff", skus: ["BBQ Houtskool", "Tuinkaars", "Plantenpot", "Gieter", "Zaadjes"] },
-  { id: "cl-kantoor", label: "Kantoor", color: "#8b6fff", skus: ["Balpen", "Notitieboek", "Plakband", "Schaar", "Markeerstiften"] },
-  { id: "cl-dier", label: "Huisdier", color: "#ff8c5a", skus: ["Hondenvoer", "Kattenvoer", "Kattenbak", "Hondensnoepjes", "Voerbak"] },
-  { id: "cl-deco", label: "Decoratie", color: "#c084fc", skus: ["Kaars", "Fotolijst", "Vaas", "Kussen", "Kunstbloem"] },
+const GROUPS=[
+  {label:"Schoonmaak",color:"#34d89e"},{label:"Beauty",color:"#e879a8"},{label:"Snacks",color:"#f0c040"},
+  {label:"Tuin",color:"#5ba8ff"},{label:"Kantoor",color:"#8b6fff"},{label:"Huisdier",color:"#ff8c5a"},
+  {label:"Decoratie",color:"#c084fc"},{label:"Kleding",color:"#6dd4e0"},{label:"Food",color:"#f07060"},
+  {label:"Seizoen",color:"#E2D44A"},{label:"Keuken",color:"#7cba5f"},{label:"Baby",color:"#ffb3d9"},
 ];
 
-function seededRandom(seed: number) {
-  let s = seed;
-  return () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-}
+function seed(s:number){return()=>{s=(s*16807)%2147483647;return s/2147483647;};}
 
-function generateGraph(): { nodes: GNode[]; edges: GEdge[] } {
-  const r = seededRandom(42);
-  const nodes: GNode[] = [];
-  const edges: GEdge[] = [];
+function buildGraph(w:number,h:number):{nodes:N[];edges:E[]}{
+  const r=seed(42);
+  const nodes:N[]=[];
+  const edges:E[]=[];
+  const cx=w/2,cy=h/2;
 
-  // Create cluster center nodes
-  CLUSTERS.forEach((cl, ci) => {
-    const angle = (ci / CLUSTERS.length) * Math.PI * 2;
-    const dist = 220;
-    nodes.push({
-      id: cl.id, label: cl.label, type: "cluster", cluster: cl.id,
-      x: 500 + Math.cos(angle) * dist, y: 400 + Math.sin(angle) * dist,
-      vx: 0, vy: 0, radius: 28, color: cl.color, activity: 0, picks: 0,
-    });
+  // Generate 200+ product nodes across 12 clusters
+  const PRODUCTS_PER_CLUSTER=18;
+  for(let g=0;g<GROUPS.length;g++){
+    const ga=(g/GROUPS.length)*Math.PI*2;
+    const gdist=Math.min(w,h)*0.28+r()*40;
+    const gcx=cx+Math.cos(ga)*gdist;
+    const gcy=cy+Math.sin(ga)*gdist;
 
-    // Create SKU nodes around cluster
-    cl.skus.forEach((sku, si) => {
-      const sa = angle + ((si - 2) / 5) * 0.8;
-      const sd = dist + 60 + r() * 40;
-      const nodeId = `sku-${cl.id}-${si}`;
+    for(let i=0;i<PRODUCTS_PER_CLUSTER;i++){
+      const angle=ga+(r()-0.5)*1.2;
+      const dist=30+r()*80;
+      const x=gcx+Math.cos(angle)*dist+(r()-0.5)*40;
+      const y=gcy+Math.sin(angle)*dist+(r()-0.5)*40;
       nodes.push({
-        id: nodeId, label: sku, type: "sku", cluster: cl.id,
-        x: 500 + Math.cos(sa) * sd + (r() - 0.5) * 30,
-        y: 400 + Math.sin(sa) * sd + (r() - 0.5) * 30,
-        vx: 0, vy: 0, radius: 8 + r() * 6,
-        color: cl.color, activity: 0, picks: Math.floor(r() * 80),
+        id:nodes.length,x:cx+(r()-0.5)*100,y:cy+(r()-0.5)*100,// start clustered in center
+        vx:0,vy:0,r:1.5+r()*3,
+        label:`SKU-${String(nodes.length).padStart(3,"0")}`,
+        group:g,color:GROUPS[g].color,a:0,picks:Math.floor(r()*80),
+        targetX:x,targetY:y,
       });
-
-      // Edge to cluster
-      edges.push({ from: nodeId, to: cl.id, weight: 0.5 + r() * 0.5, type: "cluster", active: false });
-
-      // Co-occurrence edges within cluster
-      if (si > 0) {
-        edges.push({ from: nodeId, to: `sku-${cl.id}-${si - 1}`, weight: 0.3 + r() * 0.6, type: "co-occurrence", active: false });
-      }
-    });
-  });
-
-  // Cross-cluster co-occurrence edges (sparse)
-  for (let i = 0; i < 12; i++) {
-    const c1 = Math.floor(r() * CLUSTERS.length);
-    const c2 = (c1 + 1 + Math.floor(r() * (CLUSTERS.length - 1))) % CLUSTERS.length;
-    const s1 = Math.floor(r() * 5);
-    const s2 = Math.floor(r() * 5);
-    edges.push({
-      from: `sku-${CLUSTERS[c1].id}-${s1}`,
-      to: `sku-${CLUSTERS[c2].id}-${s2}`,
-      weight: 0.1 + r() * 0.3,
-      type: "co-occurrence",
-      active: false,
-    });
+    }
   }
 
-  // Rule nodes
-  const rules = [
-    { id: "rule-velocity", label: "Velocity ML", x: 500, y: 400 },
-    { id: "rule-affinity", label: "Affinity Clustering", x: 460, y: 370 },
-    { id: "rule-route", label: "Route Optimizer", x: 540, y: 370 },
-  ];
-  rules.forEach(ru => {
+  // 12 ML/OR engine nodes in center
+  const engines=["Velocity ML","Affinity Engine","Route Solver","Demand Predictor","Zone Balancer","Cluster AI","Pattern Detect","Anomaly Detect","Forecast","Optimizer","Replenish AI","Co-occur Engine"];
+  engines.forEach((label,i)=>{
+    const angle=(i/engines.length)*Math.PI*2;
+    const dist=30+r()*50;
     nodes.push({
-      id: ru.id, label: ru.label, type: "rule", cluster: "",
-      x: ru.x + (r() - 0.5) * 40, y: ru.y + (r() - 0.5) * 40,
-      vx: 0, vy: 0, radius: 18, color: "#E2D44A", activity: 0.5, picks: 0,
+      id:nodes.length,x:cx,y:cy,vx:0,vy:0,r:4+r()*3,
+      label,group:-1,color:"#E2D44A",a:0.3,picks:0,
+      targetX:cx+Math.cos(angle)*dist,targetY:cy+Math.sin(angle)*dist,
     });
   });
 
-  // Rule connections to clusters
-  CLUSTERS.forEach(cl => {
-    rules.forEach(ru => {
-      edges.push({ from: ru.id, to: cl.id, weight: 0.15, type: "rule", active: false });
-    });
-  });
+  const total=nodes.length;
 
-  return { nodes, edges };
+  // Dense intra-cluster edges
+  for(let g=0;g<GROUPS.length;g++){
+    const clusterNodes=nodes.filter(n=>n.group===g);
+    for(let i=0;i<clusterNodes.length;i++){
+      for(let j=i+1;j<clusterNodes.length;j++){
+        if(r()<0.45){// ~45% chance of connection within cluster
+          edges.push({from:clusterNodes[i].id,to:clusterNodes[j].id,w:0.2+r()*0.6});
+        }
+      }
+    }
+  }
+
+  // Cross-cluster edges (sparser)
+  for(let i=0;i<200;i++){
+    const a=Math.floor(r()*(total-engines.length));
+    const b=Math.floor(r()*(total-engines.length));
+    if(a!==b&&nodes[a].group!==nodes[b].group){
+      edges.push({from:a,to:b,w:0.03+r()*0.12});
+    }
+  }
+
+  // Engine-to-cluster hub edges
+  const engineNodes=nodes.filter(n=>n.group===-1);
+  for(const en of engineNodes){
+    // Connect to 4-6 random cluster nodes
+    for(let i=0;i<4+Math.floor(r()*3);i++){
+      const target=Math.floor(r()*(total-engines.length));
+      edges.push({from:en.id,to:target,w:0.08+r()*0.15});
+    }
+    // Connect engines to each other
+    for(const en2 of engineNodes){
+      if(en.id<en2.id&&r()<0.4){
+        edges.push({from:en.id,to:en2.id,w:0.1+r()*0.2});
+      }
+    }
+  }
+
+  return{nodes,edges};
 }
 
-/* ═══ NEURAL GRAPH CANVAS ═══ */
-export default function NeuralPage() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [graph] = useState(generateGraph);
-  const nodesRef = useRef(graph.nodes);
-  const edgesRef = useRef(graph.edges);
-  const frameRef = useRef(0);
-  const [stats, setStats] = useState({ totalPicks: 0, activeEdges: 0, thinking: 0 });
-  const mouseRef = useRef({ x: 0, y: 0 });
-  const [hoveredNode, setHoveredNode] = useState<GNode | null>(null);
+function hexToRgb(hex:string):string{
+  return`${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)}`;
+}
 
-  // Physics simulation + rendering
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+export default function NeuralPage(){
+  const canvasRef=useRef<HTMLCanvasElement>(null);
+  const graphRef=useRef<{nodes:N[];edges:E[]}|null>(null);
+  const mouseRef=useRef({x:-999,y:-999});
+  const [stats,setStats]=useState({picks:0,active:0,thinking:0,nodes:0,edges:0});
+  const [hovered,setHovered]=useState<N|null>(null);
+  const initializedRef=useRef(false);
 
-    let animId: number;
-    let tick = 0;
+  useEffect(()=>{
+    const canvas=canvasRef.current;
+    if(!canvas)return;
+    const ctx=canvas.getContext("2d");
+    if(!ctx)return;
+    let animId:number;
+    let tick=0;
 
-    const resize = () => {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    const dpr=window.devicePixelRatio||1;
+    const resize=()=>{
+      canvas.width=canvas.offsetWidth*dpr;
+      canvas.height=canvas.offsetHeight*dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      if(!initializedRef.current){
+        graphRef.current=buildGraph(canvas.offsetWidth,canvas.offsetHeight);
+        initializedRef.current=true;
+      }
     };
     resize();
-    window.addEventListener("resize", resize);
+    window.addEventListener("resize",resize);
 
-    const W = () => canvas.offsetWidth;
-    const H = () => canvas.offsetHeight;
-
-    const render = () => {
+    const render=()=>{
+      if(!graphRef.current){animId=requestAnimationFrame(render);return;}
       tick++;
-      const nodes = nodesRef.current;
-      const edges = edgesRef.current;
-      const w = W();
-      const h = H();
+      const{nodes,edges}=graphRef.current;
+      const w=canvas.offsetWidth,h=canvas.offsetHeight;
 
-      ctx.clearRect(0, 0, w, h);
+      // Clear with slight trail effect
+      ctx.fillStyle="rgba(10,11,16,0.15)";
+      ctx.fillRect(0,0,w,h);
 
-      // Background
-      ctx.fillStyle = "#0a0b10";
-      ctx.fillRect(0, 0, w, h);
-
-      // Subtle radial glow in center
-      const grd = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, 350);
-      grd.addColorStop(0, "rgba(139,111,255,0.06)");
-      grd.addColorStop(1, "transparent");
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, w, h);
-
-      // Simulate picks — random node activation
-      if (tick % 30 === 0) {
-        const skuNodes = nodes.filter(n => n.type === "sku");
-        const picked = skuNodes[Math.floor(Math.random() * skuNodes.length)];
-        if (picked) {
-          picked.activity = 1;
-          picked.picks++;
-          // Activate connected edges
-          edges.forEach(e => {
-            if (e.from === picked.id || e.to === picked.id) {
-              e.active = true;
-              // Activate connected node too
-              const otherId = e.from === picked.id ? e.to : e.from;
-              const other = nodes.find(n => n.id === otherId);
-              if (other) other.activity = Math.max(other.activity, 0.4);
-            }
-          });
-          // Activate rule nodes
-          nodes.filter(n => n.type === "rule").forEach(n => { n.activity = Math.min(1, n.activity + 0.3); });
-        }
+      // Every 10 frames, do a full clear to prevent artifacts
+      if(tick%120===0){
+        ctx.fillStyle="#0a0b10";
+        ctx.fillRect(0,0,w,h);
       }
 
-      // Simple force simulation
-      for (const n of nodes) {
-        // Gravity toward center
-        n.vx += (w / 2 - n.x) * 0.0003;
-        n.vy += (h / 2 - n.y) * 0.0003;
+      // Ambient glow
+      if(tick%120<2){
+        const g1=ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.min(w,h)*0.5);
+        g1.addColorStop(0,"rgba(139,111,255,0.025)");
+        g1.addColorStop(0.4,"rgba(226,212,74,0.015)");
+        g1.addColorStop(1,"transparent");
+        ctx.fillStyle=g1;
+        ctx.fillRect(0,0,w,h);
+      }
 
-        // Repulsion between nodes
-        for (const m of nodes) {
-          if (m === n) continue;
-          const dx = n.x - m.x;
-          const dy = n.y - m.y;
-          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          const minDist = n.radius + m.radius + 20;
-          if (dist < minDist) {
-            const force = (minDist - dist) * 0.02;
-            n.vx += (dx / dist) * force;
-            n.vy += (dy / dist) * force;
+      // Simulate picks — multiple per frame for density
+      if(tick%12===0){
+        const skuNodes=nodes.filter(n=>n.group>=0);
+        const count=2+Math.floor(Math.random()*4);
+        for(let c=0;c<count;c++){
+          const picked=skuNodes[Math.floor(Math.random()*skuNodes.length)];
+          if(picked){
+            picked.a=1;
+            picked.picks++;
+            // Ripple
+            for(const e of edges){
+              if(e.from===picked.id||e.to===picked.id){
+                const oid=e.from===picked.id?e.to:e.from;
+                if(nodes[oid])nodes[oid].a=Math.max(nodes[oid].a,0.25+e.w*0.3);
+              }
+            }
+            // Engine pulse
+            nodes.filter(n=>n.group===-1).forEach(n=>{n.a=Math.min(1,n.a+0.08);});
           }
         }
-
-        // Damping
-        n.vx *= 0.92;
-        n.vy *= 0.92;
-        n.x += n.vx;
-        n.y += n.vy;
-
-        // Bounds
-        n.x = Math.max(n.radius, Math.min(w - n.radius, n.x));
-        n.y = Math.max(n.radius, Math.min(h - n.radius, n.y));
-
-        // Decay activity
-        n.activity *= 0.96;
       }
 
-      // Edge spring forces
-      for (const e of edges) {
-        const a = nodes.find(n => n.id === e.from);
-        const b = nodes.find(n => n.id === e.to);
-        if (!a || !b) continue;
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const targetDist = e.type === "cluster" ? 80 : e.type === "rule" ? 150 : 120;
-        const force = (dist - targetDist) * 0.001 * e.weight;
-        a.vx += (dx / dist) * force;
-        a.vy += (dy / dist) * force;
-        b.vx -= (dx / dist) * force;
-        b.vy -= (dy / dist) * force;
+      // Physics
+      const cx=w/2,cy=h/2;
+      for(const n of nodes){
+        // Move toward target position (gentle spring)
+        n.vx+=(n.targetX-n.x)*0.003;
+        n.vy+=(n.targetY-n.y)*0.003;
 
-        // Decay edge activity
-        if (e.active) e.active = false;
+        // Slight random jitter for organic feel
+        n.vx+=(Math.random()-0.5)*0.15;
+        n.vy+=(Math.random()-0.5)*0.15;
+
+        // Damping
+        n.vx*=0.9;
+        n.vy*=0.9;
+        n.x+=n.vx;
+        n.y+=n.vy;
+
+        // Decay activity
+        n.a*=0.965;
       }
 
       // Draw edges
-      for (const e of edges) {
-        const a = nodes.find(n => n.id === e.from);
-        const b = nodes.find(n => n.id === e.to);
-        if (!a || !b) continue;
+      ctx.lineCap="round";
+      for(const e of edges){
+        const a=nodes[e.from],b=nodes[e.to];
+        if(!a||!b)continue;
+        const activity=Math.max(a.a,b.a);
 
-        const isActive = a.activity > 0.3 || b.activity > 0.3;
+        // Skip very faint edges when inactive
+        if(activity<0.05&&e.w<0.15)continue;
+
         ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.strokeStyle = isActive
-          ? `rgba(${e.type === "rule" ? "226,212,74" : "139,111,255"}, ${0.3 + Math.max(a.activity, b.activity) * 0.7})`
-          : `rgba(255,255,255, ${0.03 + e.weight * 0.05})`;
-        ctx.lineWidth = isActive ? 1.5 + e.weight * 2 : 0.5 + e.weight;
+        ctx.moveTo(a.x,a.y);
+
+        // Slight curve for organic feel
+        const mx=(a.x+b.x)/2+(Math.sin(tick*0.01+e.from)*3);
+        const my=(a.y+b.y)/2+(Math.cos(tick*0.01+e.to)*3);
+        ctx.quadraticCurveTo(mx,my,b.x,b.y);
+
+        if(activity>0.1){
+          const isEngine=a.group===-1||b.group===-1;
+          const col=isEngine?"226,212,74":a.group===b.group?hexToRgb(a.color):"139,111,255";
+          ctx.strokeStyle=`rgba(${col},${Math.min(0.8,0.05+activity*0.6)})`;
+          ctx.lineWidth=0.3+activity*2;
+        }else{
+          ctx.strokeStyle=`rgba(255,255,255,${0.008+e.w*0.02})`;
+          ctx.lineWidth=0.2;
+        }
         ctx.stroke();
       }
 
       // Draw nodes
-      for (const n of nodes) {
-        // Glow when active
-        if (n.activity > 0.1) {
-          const glowR = n.radius + 15 * n.activity;
-          const glow = ctx.createRadialGradient(n.x, n.y, n.radius, n.x, n.y, glowR);
-          glow.addColorStop(0, n.color + "40");
-          glow.addColorStop(1, "transparent");
-          ctx.fillStyle = glow;
+      for(const n of nodes){
+        const isEngine=n.group===-1;
+
+        // Glow
+        if(n.a>0.08){
+          const glowSize=n.r+30*n.a;
+          const gr=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,glowSize);
+          gr.addColorStop(0,n.color+(isEngine?"50":"30"));
+          gr.addColorStop(1,"transparent");
+          ctx.fillStyle=gr;
           ctx.beginPath();
-          ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
+          ctx.arc(n.x,n.y,glowSize,0,Math.PI*2);
           ctx.fill();
         }
 
-        // Node circle
+        // Dot
+        const pulse=n.a>0.3?1+Math.sin(tick*0.15)*0.3*n.a:0;
         ctx.beginPath();
-        ctx.arc(n.x, n.y, n.radius + (n.activity > 0.3 ? 2 : 0), 0, Math.PI * 2);
-        const alpha = n.type === "sku" ? 0.6 + n.activity * 0.4 : 0.8;
-        ctx.fillStyle = n.color + (Math.round(alpha * 255).toString(16).padStart(2, "0"));
+        ctx.arc(n.x,n.y,n.r+pulse,0,Math.PI*2);
+        const alpha=isEngine?0.8+n.a*0.2:0.35+n.a*0.65;
+        ctx.fillStyle=n.color+Math.round(alpha*255).toString(16).padStart(2,"0");
         ctx.fill();
 
-        // Border
-        if (n.type === "cluster" || n.type === "rule") {
-          ctx.strokeStyle = n.color;
-          ctx.lineWidth = 2;
+        // Engine ring
+        if(isEngine&&n.a>0.1){
+          ctx.beginPath();
+          ctx.arc(n.x,n.y,n.r+4+n.a*3,0,Math.PI*2);
+          ctx.strokeStyle=`rgba(226,212,74,${n.a*0.4})`;
+          ctx.lineWidth=0.8;
+          ctx.stroke();
+        }
+      }
+
+      // Hover highlight
+      const mx=mouseRef.current.x,my=mouseRef.current.y;
+      let found:N|null=null;
+      for(const n of nodes){
+        if(Math.hypot(mx-n.x,my-n.y)<n.r+10){found=n;break;}
+      }
+      setHovered(found);
+
+      if(found){
+        // Highlight ring
+        ctx.beginPath();
+        ctx.arc(found.x,found.y,found.r+8,0,Math.PI*2);
+        ctx.strokeStyle=found.color;
+        ctx.lineWidth=1.5;
+        ctx.stroke();
+
+        // Highlight connections
+        for(const e of edges){
+          if(e.from!==found.id&&e.to!==found.id)continue;
+          const a=nodes[e.from],b=nodes[e.to];
+          if(!a||!b)continue;
+          ctx.beginPath();
+          ctx.moveTo(a.x,a.y);
+          ctx.lineTo(b.x,b.y);
+          ctx.strokeStyle=found.color+"60";
+          ctx.lineWidth=1;
+          ctx.stroke();
+          // Highlight connected node
+          const other=e.from===found.id?b:a;
+          ctx.beginPath();
+          ctx.arc(other.x,other.y,other.r+3,0,Math.PI*2);
+          ctx.strokeStyle=found.color+"40";
+          ctx.lineWidth=1;
           ctx.stroke();
         }
 
         // Label
-        if (n.type === "cluster" || n.type === "rule") {
-          ctx.fillStyle = "#fff";
-          ctx.font = `bold ${n.type === "rule" ? 8 : 9}px Inter, sans-serif`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(n.label, n.x, n.y);
-        } else if (n.radius > 10) {
-          ctx.fillStyle = "rgba(255,255,255,0.7)";
-          ctx.font = "6px Inter, sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(n.label, n.x, n.y + n.radius + 10);
+        ctx.fillStyle="#fff";
+        ctx.font="bold 11px Inter,sans-serif";
+        ctx.textAlign="center";
+        ctx.shadowColor="rgba(0,0,0,0.8)";
+        ctx.shadowBlur=4;
+        ctx.fillText(found.label,found.x,found.y-found.r-12);
+        if(found.group>=0&&GROUPS[found.group]){
+          ctx.font="9px Inter,sans-serif";
+          ctx.fillStyle=found.color;
+          ctx.fillText(GROUPS[found.group].label,found.x,found.y-found.r-24);
         }
+        ctx.shadowBlur=0;
       }
 
-      // Hover detection
-      const mx = mouseRef.current.x;
-      const my = mouseRef.current.y;
-      let found: GNode | null = null;
-      for (const n of nodes) {
-        const dx = mx - n.x;
-        const dy = my - n.y;
-        if (dx * dx + dy * dy < (n.radius + 5) * (n.radius + 5)) {
-          found = n;
-          break;
-        }
-      }
-      setHoveredNode(found);
-
-      // Stats
-      if (tick % 60 === 0) {
+      // Stats update
+      if(tick%30===0){
         setStats({
-          totalPicks: nodes.reduce((s, n) => s + n.picks, 0),
-          activeEdges: edges.filter(e => {
-            const a = nodes.find(n => n.id === e.from);
-            const b = nodes.find(n => n.id === e.to);
-            return a && b && (a.activity > 0.2 || b.activity > 0.2);
-          }).length,
-          thinking: Math.round(nodes.filter(n => n.type === "rule").reduce((s, n) => s + n.activity, 0) / 3 * 100),
+          picks:nodes.reduce((s,n)=>s+n.picks,0),
+          active:edges.filter(e=>{const a=nodes[e.from],b=nodes[e.to];return a&&b&&Math.max(a.a,b.a)>0.08;}).length,
+          thinking:Math.round(nodes.filter(n=>n.group===-1).reduce((s,n)=>s+n.a,0)/12*100),
+          nodes:nodes.length,
+          edges:edges.length,
         });
       }
 
-      animId = requestAnimationFrame(render);
+      animId=requestAnimationFrame(render);
     };
 
-    animId = requestAnimationFrame(render);
-    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
-  }, [graph]);
+    animId=requestAnimationFrame(render);
+    return()=>{cancelAnimationFrame(animId);window.removeEventListener("resize",resize);};
+  },[]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  }, []);
-
-  return (
-    <div style={{ height: "100vh", background: "#0a0b10", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+  return(
+    <div style={{height:"100vh",background:"#0a0b10",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* Header */}
-      <div style={{ height: 54, background: "var(--bg-surface)", borderBottom: "1px solid var(--border-medium)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", zIndex: 2 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <a href="/warehouse" style={{ fontSize: 12, color: "var(--text-tertiary)", textDecoration: "none" }}>← Warehouse</a>
-          <span style={{ fontSize: 15, fontWeight: 700 }}>Neural Network View</span>
-          <span style={{ fontSize: 10, padding: "3px 10px", borderRadius: 20, background: "rgba(139,111,255,0.12)", color: "var(--accent-purple)", fontWeight: 600 }}>ML + OR Engine</span>
+      <div style={{height:44,background:"rgba(12,13,20,0.95)",borderBottom:"1px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",zIndex:2,flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <a href="/warehouse" style={{fontSize:10,color:"var(--text-tertiary)",textDecoration:"none",padding:"3px 8px",borderRadius:4,border:"1px solid var(--border-medium)"}}>← Map</a>
+          <span style={{fontSize:13,fontWeight:700,letterSpacing:"-0.02em"}}>SlotPilot Neural Graph</span>
+          <span style={{fontSize:8,padding:"2px 8px",borderRadius:10,background:"rgba(139,111,255,0.15)",color:"#8b6fff",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em"}}>ML + OR Live</span>
         </div>
-        <div style={{ display: "flex", gap: 16, fontSize: 11 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-green)", animation: "pulse 2s ease infinite" }} />
-            <span style={{ color: "var(--text-tertiary)" }}>Live</span>
-          </div>
-          <span style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{stats.totalPicks} picks</span>
-          <span style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>{stats.activeEdges} active edges</span>
-          <span style={{ color: "var(--accent-cict)", fontFamily: "var(--font-mono)" }}>Thinking: {stats.thinking}%</span>
+        <div style={{display:"flex",gap:12,fontSize:9,fontFamily:"var(--font-mono)"}}>
+          <span style={{display:"flex",alignItems:"center",gap:3,color:"var(--accent-green)"}}><span style={{width:4,height:4,borderRadius:"50%",background:"var(--accent-green)",animation:"pulse 1.5s ease infinite"}}/>LIVE</span>
+          <span style={{color:"var(--text-tertiary)"}}>{stats.nodes} nodes</span>
+          <span style={{color:"var(--text-tertiary)"}}>{stats.edges} edges</span>
+          <span style={{color:"var(--text-tertiary)"}}>{stats.picks} picks</span>
+          <span style={{color:"var(--accent-cict)"}}>{stats.active} active</span>
+          <span style={{color:"var(--accent-purple)"}}>Think {stats.thinking}%</span>
         </div>
       </div>
 
-      {/* Canvas */}
-      <canvas
-        ref={canvasRef}
-        onMouseMove={handleMouseMove}
-        style={{ flex: 1, cursor: "crosshair", width: "100%", height: "100%" }}
-      />
+      <canvas ref={canvasRef} onMouseMove={(e)=>{const r=e.currentTarget.getBoundingClientRect();mouseRef.current={x:e.clientX-r.left,y:e.clientY-r.top};}} style={{flex:1,cursor:"crosshair"}}/>
 
-      {/* Hover tooltip */}
-      {hoveredNode && (
-        <div style={{
-          position: "fixed", left: mouseRef.current.x + 20, top: mouseRef.current.y + 60,
-          background: "var(--bg-surface)", border: "1px solid var(--border-medium)",
-          borderRadius: 12, padding: "12px 16px", minWidth: 200,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.5)", zIndex: 100, pointerEvents: "none",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <span style={{ width: 10, height: 10, borderRadius: "50%", background: hoveredNode.color }} />
-            <span style={{ fontSize: 13, fontWeight: 600 }}>{hoveredNode.label}</span>
+      {/* Hover detail */}
+      {hovered&&hovered.group>=0&&(
+        <div style={{position:"fixed",left:mouseRef.current.x+16,top:mouseRef.current.y+52,background:"rgba(12,13,20,0.95)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",minWidth:160,boxShadow:"0 8px 24px rgba(0,0,0,0.5)",zIndex:100,pointerEvents:"none"}}>
+          <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:3}}>
+            <span style={{width:6,height:6,borderRadius:"50%",background:hovered.color}}/>
+            <span style={{fontSize:11,fontWeight:600}}>{hovered.label}</span>
           </div>
-          <div style={{ fontSize: 10, color: "var(--text-tertiary)", marginBottom: 6 }}>
-            {hoveredNode.type === "cluster" ? "Affinity Cluster" : hoveredNode.type === "rule" ? "ML/OR Engine" : "Product SKU"}
-          </div>
-          {hoveredNode.type === "sku" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", fontSize: 11 }}>
-              <div><span style={{ color: "var(--text-tertiary)" }}>Picks: </span><span style={{ fontWeight: 600, fontFamily: "var(--font-mono)" }}>{hoveredNode.picks}</span></div>
-              <div><span style={{ color: "var(--text-tertiary)" }}>Activiteit: </span><span style={{ fontWeight: 600, color: "var(--accent-green)" }}>{Math.round(hoveredNode.activity * 100)}%</span></div>
-              <div><span style={{ color: "var(--text-tertiary)" }}>Cluster: </span><span style={{ fontWeight: 500 }}>{CLUSTERS.find(c => c.id === hoveredNode.cluster)?.label}</span></div>
-            </div>
-          )}
+          <div style={{fontSize:9,color:"var(--text-tertiary)"}}>{GROUPS[hovered.group]?.label} · Picks: {hovered.picks} · {Math.round(hovered.a*100)}% active</div>
         </div>
       )}
 
       {/* Legend */}
-      <div style={{
-        position: "absolute", bottom: 20, left: 20, background: "var(--bg-surface)",
-        border: "1px solid var(--border-medium)", borderRadius: 12, padding: "14px 18px",
-        boxShadow: "var(--shadow-lg)", zIndex: 2,
-      }}>
-        <div style={{ fontSize: 10, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, fontWeight: 600 }}>Neural Graph</div>
-        {[
-          { color: "var(--accent-purple)", label: "Co-occurrence edges" },
-          { color: "var(--accent-cict)", label: "ML/OR reasoning" },
-          { color: "var(--accent-green)", label: "Active pick path" },
-        ].map((l, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-            <span style={{ width: 16, height: 2, borderRadius: 1, background: l.color }} />
-            <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>{l.label}</span>
-          </div>
-        ))}
-        <div style={{ marginTop: 8, borderTop: "1px solid var(--border-light)", paddingTop: 8 }}>
-          {CLUSTERS.map((cl, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: cl.color }} />
-              <span style={{ fontSize: 9, color: "var(--text-tertiary)" }}>{cl.label}</span>
+      <div style={{position:"absolute",bottom:14,left:14,background:"rgba(12,13,20,0.9)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:8,padding:"8px 12px",zIndex:2}}>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,maxWidth:300}}>
+          {GROUPS.map((g,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:3}}>
+              <span style={{width:5,height:5,borderRadius:"50%",background:g.color}}/>
+              <span style={{fontSize:7,color:"rgba(255,255,255,0.4)"}}>{g.label}</span>
             </div>
           ))}
+          <div style={{display:"flex",alignItems:"center",gap:3}}>
+            <span style={{width:5,height:5,borderRadius:"50%",background:"#E2D44A"}}/>
+            <span style={{fontSize:7,color:"rgba(255,255,255,0.4)"}}>ML/OR</span>
+          </div>
         </div>
       </div>
     </div>
