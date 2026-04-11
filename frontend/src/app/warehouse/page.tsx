@@ -280,110 +280,181 @@ function SuboptimalAlert({count,onViewProposal}:{count:number;onViewProposal:()=
   );
 }
 
-/* ═══ RESLOT PROPOSAL PANEL ═══ */
+/* ═══ RESLOT PROPOSAL — floating toaster with tabs ═══ */
 function ReslotProposal({suboptimalCount,onConfirm,onCancel}:{suboptimalCount:number;onConfirm:()=>void;onCancel:()=>void}){
-  const [holding,setHolding]=useState(false);
-  const [holdProgress,setHoldProgress]=useState(0);
-  const [confirmed,setConfirmed]=useState(false);
+  const[tab,setTab]=useState(0);
+  const[holding,setHolding]=useState(false);
+  const[holdProgress,setHoldProgress]=useState(0);
   const holdTimer=useRef<ReturnType<typeof setInterval>|null>(null);
 
-  const startHold=()=>{
-    setHolding(true);
-    setHoldProgress(0);
-    let p=0;
-    holdTimer.current=setInterval(()=>{
-      p+=2;
-      setHoldProgress(p);
-      if(p>=100){
-        if(holdTimer.current) clearInterval(holdTimer.current);
-        setConfirmed(true);
-        setTimeout(()=>onConfirm(),1500);
-      }
-    },30);
-  };
-  const cancelHold=()=>{
-    setHolding(false);
-    setHoldProgress(0);
-    if(holdTimer.current) clearInterval(holdTimer.current);
-  };
+  const startHold=()=>{setHolding(true);setHoldProgress(0);let p=0;holdTimer.current=setInterval(()=>{p+=2;setHoldProgress(p);if(p>=100){if(holdTimer.current)clearInterval(holdTimer.current);setTimeout(onConfirm,300);}},30);};
+  const cancelHold=()=>{setHolding(false);setHoldProgress(0);if(holdTimer.current)clearInterval(holdTimer.current);};
 
   const moves=[
-    {from:"A09-L14-L1",to:"A03-R03-L1",sku:"Afwasmiddel 500ml",reason:"Co-occurrence 87% met WC-Reiniger & Schoonmaakdoekjes — cluster hergroeperen verlaagt gangpaden/order van 4.2 → 2.1",cat:"Huishoudelijk"},
-    {from:"A11-R08-L1",to:"A04-L07-L1",sku:"Chips Paprika 200g",reason:"Top-5 co-picked met Chocoladereep & Nootjes Mix — plaatsing in Snacks-cluster verlaagt route-score 38%",cat:"Food"},
-    {from:"A10-L19-L1",to:"A03-R01-L1",sku:"Shampoo Argan 300ml",reason:"Beauty-cluster verspreid over 5 gangpaden — hergroeperen bespaart 1.3 gangpad/order gemiddeld",cat:"Beauty"},
-    {from:"A02-L04-L1",to:"A12-R11-L1",sku:"Riem Leder Bruin",reason:"2 picks/wk bezet high-frequency zone — vrijmaken voor snelloper verhoogt zone-efficiëntie 15%",cat:"Kleding"},
-    {from:"A01-R09-L1",to:"A14-L06-L1",sku:"Kunstbloem Roos",reason:"1 pick/wk, ML-model detecteert 0% co-occurrence met zone-cluster — verplaatsen naar low-frequency zone",cat:"Decoratie"},
+    {from:"A09-L14-L1",to:"A03-R03-L1",sku:"Afwasmiddel 500ml",reason:"Co-occurrence 87% — cluster hergroeperen",cat:"Schoonmaak",improvement:48,confidence:94},
+    {from:"A11-R08-L1",to:"A04-L07-L1",sku:"Chips Paprika 200g",reason:"Snacks-cluster plaatsing — route-score -38%",cat:"Food",improvement:38,confidence:91},
+    {from:"A10-L19-L1",to:"A03-R01-L1",sku:"Shampoo Argan 300ml",reason:"Beauty-cluster hergroeperen — -1.3 gangp/order",cat:"Beauty",improvement:32,confidence:88},
+    {from:"A02-L04-L1",to:"A12-R11-L1",sku:"Riem Leder Bruin",reason:"Vrijmaken high-freq zone — +15% zone-eff.",cat:"Kleding",improvement:15,confidence:85},
+    {from:"A01-R09-L1",to:"A14-L06-L1",sku:"Kunstbloem Roos",reason:"0% co-occurrence — naar low-freq zone",cat:"Decoratie",improvement:12,confidence:82},
   ];
 
-  // Confirmed state — don't replace panel, toaster is shown separately
+  const tabs=["Impact","Verplaatsingen","Bevestig"];
 
+  // Before/after comparison data
+  const beforeAfter=[
+    {label:"Gangpaden/order",before:3.8,after:2.4,unit:"",better:"lower"},
+    {label:"Route-efficiëntie",before:62,after:85,unit:"%",better:"higher"},
+    {label:"Cluster coherentie",before:41,after:78,unit:"%",better:"higher"},
+    {label:"Zone-balans",before:56,after:74,unit:"%",better:"higher"},
+  ];
 
   return(
-    <div style={{width:420,minHeight:"100%",background:"var(--bg-surface)",borderLeft:"1px solid var(--border-light)",overflow:"auto",animation:"slideInRight 0.3s var(--ease-out)",padding:"24px",boxShadow:"-4px 0 16px rgba(0,0,0,0.2)"}}>
+    <div style={{position:"fixed",bottom:24,right:24,width:380,maxHeight:"calc(100vh - 48px)",background:"var(--bg-surface)",border:"1px solid var(--border-medium)",borderRadius:"var(--radius-lg)",overflow:"hidden",animation:"toasterIn 0.4s var(--ease-out)",boxShadow:"var(--shadow-xl)",zIndex:55,display:"flex",flexDirection:"column"}}>
       {/* Header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
-        <div>
-          <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Herslotting voorstel</div>
-          <div style={{fontSize:12,color:"var(--text-secondary)"}}>{moves.length} verplaatsingen · {suboptimalCount} locaties betrokken</div>
+      <div style={{padding:"14px 18px",borderBottom:"1px solid var(--border-light)",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:28,height:28,borderRadius:8,background:"linear-gradient(135deg, var(--accent-red), var(--accent-amber))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>⚡</div>
+          <div>
+            <div style={{fontSize:13,fontWeight:700}}>Herslotting Voorstel</div>
+            <div style={{fontSize:10,color:"var(--text-tertiary)"}}>{moves.length} verplaatsingen · ML confidence 91%</div>
+          </div>
         </div>
-        <button onClick={onCancel} style={{width:28,height:28,borderRadius:"var(--radius-sm)",border:"1px solid var(--border-light)",background:"var(--bg-subtle)",color:"var(--text-secondary)",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+        <button onClick={onCancel} style={{width:24,height:24,borderRadius:6,border:"1px solid var(--border-light)",background:"var(--bg-subtle)",color:"var(--text-tertiary)",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
       </div>
 
-      {/* Impact summary */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
-        <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:12}}>
-          <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>Gangpaden/order reductie</div>
-          <div style={{fontSize:20,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>-1.4</div>
-          <div style={{fontSize:10,color:"var(--text-tertiary)"}}>gem. per order</div>
-        </div>
-        <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:12}}>
-          <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>Route-efficiëntie</div>
-          <div style={{fontSize:20,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>+23%</div>
-          <div style={{fontSize:10,color:"var(--text-tertiary)"}}>ML-geoptimaliseerd</div>
-        </div>
+      {/* Tabs */}
+      <div style={{display:"flex",borderBottom:"1px solid var(--border-light)",flexShrink:0}}>
+        {tabs.map((t,i)=>(
+          <button key={i} onClick={()=>setTab(i)} style={{flex:1,padding:"8px 0",border:"none",cursor:"pointer",fontSize:10,fontWeight:tab===i?600:400,color:tab===i?"var(--accent-purple)":"var(--text-tertiary)",background:"transparent",borderBottom:tab===i?"2px solid var(--accent-purple)":"2px solid transparent",transition:"all 0.15s ease",fontFamily:"var(--font-sans)"}}>{t}</button>
+        ))}
       </div>
 
-      {/* Movement list */}
-      <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10,fontWeight:600}}>Voorgestelde verplaatsingen</div>
-      {moves.map((m,i)=>(
-        <div key={i} style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:12,marginBottom:8,animation:`fadeInUp 0.3s var(--ease-out) ${i*0.05}s backwards`}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <span style={{fontSize:12,fontWeight:600}}>{m.sku}</span>
-            <span style={{fontSize:10,color:"var(--text-tertiary)",background:"var(--bg-elevated)",padding:"2px 8px",borderRadius:"var(--radius-full)"}}>{m.cat}</span>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-            <span style={{fontSize:11,fontFamily:"var(--font-mono)",color:"var(--accent-red)"}}>{m.from}</span>
-            <span style={{fontSize:11,color:"var(--text-tertiary)"}}>→</span>
-            <span style={{fontSize:11,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>{m.to}</span>
-          </div>
-          <div style={{fontSize:10,color:"var(--text-tertiary)"}}>{m.reason}</div>
-        </div>
-      ))}
+      {/* Tab content */}
+      <div style={{flex:1,overflow:"auto",padding:"14px 18px"}}>
 
-      {/* Hold to Slot button */}
-      <div style={{marginTop:20,position:"sticky",bottom:0,paddingTop:16,paddingBottom:8,background:"var(--bg-surface)"}}>
-        <button
-          onPointerDown={startHold}
-          onPointerUp={cancelHold}
-          onPointerLeave={cancelHold}
-          style={{
-            width:"100%",height:52,borderRadius:"var(--radius-md)",border:"2px solid",
-            borderColor:holding?"var(--accent-green)":"var(--border-medium)",
-            cursor:"pointer",
-            background:holding?`linear-gradient(90deg, rgba(54,216,158,0.25) ${holdProgress}%, var(--bg-elevated) ${holdProgress}%)`:"var(--bg-elevated)",
-            color:holding?"var(--accent-green)":"var(--text-primary)",
-            fontSize:14,fontWeight:700,
-            transition:holding?"none":"all 0.2s ease",
-            position:"relative",overflow:"hidden",
-            userSelect:"none",
-            touchAction:"none",
-          }}
-        >
-          {holding?`${Math.round(holdProgress)}% — Blijf vasthouden...`:"⏎ Houd ingedrukt om naar WMS te sturen"}
-        </button>
-        <div style={{fontSize:10,color:"var(--text-tertiary)",textAlign:"center",marginTop:8}}>
-          Verplaatsingsinstructies worden direct naar het WMS verzonden
-        </div>
+        {/* Tab 0: Impact — charts & before/after */}
+        {tab===0&&(
+          <div>
+            {/* Gauges row */}
+            <div style={{display:"flex",justifyContent:"space-around",marginBottom:16}}>
+              <Gauge value={23} max={100} label="Route ↑" color="var(--accent-green)" size={52}/>
+              <Gauge value={91} max={100} label="ML Conf." color="var(--accent-purple)" size={52}/>
+              <Gauge value={37} max={100} label="Impact" color="var(--accent-cict)" size={52}/>
+            </div>
+
+            {/* Before/After comparison bars */}
+            <div style={{fontSize:9,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,fontWeight:600}}>Before / After Vergelijking</div>
+            {beforeAfter.map((ba,i)=>{
+              const beforePct=ba.better==="lower"?(ba.before/5)*100:(ba.before);
+              const afterPct=ba.better==="lower"?(ba.after/5)*100:(ba.after);
+              const improved=ba.better==="lower"?ba.after<ba.before:ba.after>ba.before;
+              return(
+                <div key={i} style={{marginBottom:10,animation:`fadeInUp 0.3s var(--ease-out) ${i*0.06}s backwards`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                    <span style={{fontSize:10,color:"var(--text-secondary)"}}>{ba.label}</span>
+                    <span style={{fontSize:10,fontFamily:"var(--font-mono)",fontWeight:600,color:improved?"var(--accent-green)":"var(--accent-red)"}}>
+                      {ba.before}{ba.unit} → {ba.after}{ba.unit}
+                    </span>
+                  </div>
+                  <div style={{display:"flex",gap:4,height:8}}>
+                    <div style={{flex:1,background:"var(--bg-elevated)",borderRadius:4,overflow:"hidden"}}>
+                      <div style={{width:`${beforePct}%`,height:"100%",borderRadius:4,background:"var(--accent-red)",opacity:0.5,transition:"width 0.6s var(--ease-out)"}}/>
+                    </div>
+                    <div style={{flex:1,background:"var(--bg-elevated)",borderRadius:4,overflow:"hidden"}}>
+                      <div style={{width:`${afterPct}%`,height:"100%",borderRadius:4,background:"var(--accent-green)",transition:"width 0.6s var(--ease-out)"}}/>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:8,color:"var(--text-tertiary)",marginTop:2}}>
+                    <span>Huidig</span><span>Na herslotting</span>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Funnel */}
+            <div style={{fontSize:9,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,marginTop:14,fontWeight:600}}>Optimalisatie Flow</div>
+            <FunnelChart
+              data={[
+                {label:"Gedetecteerd",value:suboptimalCount,gradient:[{offset:"0%",color:"var(--accent-red)"},{offset:"100%",color:"var(--accent-amber)"}]},
+                {label:"Geanalyseerd",value:Math.round(suboptimalCount*0.85),gradient:[{offset:"0%",color:"var(--accent-amber)"},{offset:"100%",color:"var(--accent-cict)"}]},
+                {label:"Voorgesteld",value:moves.length,gradient:[{offset:"0%",color:"var(--accent-cict)"},{offset:"100%",color:"var(--accent-purple)"}]},
+                {label:"Bevestigd",value:0,displayValue:"—",gradient:[{offset:"0%",color:"var(--accent-purple)"},{offset:"100%",color:"var(--accent-green)"}]},
+              ]}
+              layers={3}
+              showPercentage={false}
+              style={{aspectRatio:"3/1"}}
+            />
+          </div>
+        )}
+
+        {/* Tab 1: Verplaatsingen — enriched cards */}
+        {tab===1&&(
+          <div>
+            {moves.map((m,i)=>(
+              <div key={i} style={{background:"var(--bg-card)",borderRadius:8,padding:12,marginBottom:8,animation:`fadeInUp 0.3s var(--ease-out) ${i*0.06}s backwards`,borderLeft:`3px solid ${m.confidence>90?"var(--accent-green)":m.confidence>85?"var(--accent-cict)":"var(--accent-amber)"}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <span style={{fontSize:12,fontWeight:600}}>{m.sku}</span>
+                  <div style={{display:"flex",gap:4}}>
+                    <span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:"var(--radius-full)",background:"var(--bg-elevated)",color:"var(--text-tertiary)"}}>{m.cat}</span>
+                    <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:"var(--radius-full)",background:"rgba(139,111,255,0.15)",color:"var(--accent-purple)"}}>{m.confidence}%</span>
+                  </div>
+                </div>
+                {/* From → To with visual */}
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                  <div style={{flex:1,padding:"4px 8px",borderRadius:4,background:"rgba(255,92,108,0.08)",border:"1px solid rgba(255,92,108,0.12)"}}>
+                    <div style={{fontSize:8,color:"var(--accent-red)",fontWeight:600}}>VAN</div>
+                    <div style={{fontSize:10,fontFamily:"var(--font-mono)",fontWeight:600}}>{m.from}</div>
+                  </div>
+                  <span style={{fontSize:14,color:"var(--accent-green)"}}>→</span>
+                  <div style={{flex:1,padding:"4px 8px",borderRadius:4,background:"rgba(54,216,158,0.08)",border:"1px solid rgba(54,216,158,0.12)"}}>
+                    <div style={{fontSize:8,color:"var(--accent-green)",fontWeight:600}}>NAAR</div>
+                    <div style={{fontSize:10,fontFamily:"var(--font-mono)",fontWeight:600}}>{m.to}</div>
+                  </div>
+                </div>
+                {/* Improvement bar */}
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{flex:1,height:4,borderRadius:2,background:"var(--bg-elevated)"}}>
+                    <div style={{width:`${m.improvement}%`,height:"100%",borderRadius:2,background:"var(--accent-green)",transition:"width 0.6s var(--ease-out)"}}/>
+                  </div>
+                  <span style={{fontSize:9,fontFamily:"var(--font-mono)",fontWeight:600,color:"var(--accent-green)"}}>+{m.improvement}%</span>
+                </div>
+                <div style={{fontSize:9,color:"var(--text-tertiary)",marginTop:4}}>{m.reason}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Tab 2: Bevestig — summary + hold to slot */}
+        {tab===2&&(
+          <div style={{textAlign:"center",padding:"16px 0"}}>
+            <div style={{fontSize:36,marginBottom:8,animation:"fadeInUp 0.3s var(--ease-out)"}}>🔄</div>
+            <div style={{fontSize:18,fontWeight:800,marginBottom:4,animation:"fadeInUp 0.3s var(--ease-out) 0.05s backwards"}}>{moves.length} verplaatsingen</div>
+            <div style={{fontSize:12,color:"var(--text-secondary)",marginBottom:4,animation:"fadeInUp 0.3s var(--ease-out) 0.1s backwards"}}>Route-efficiëntie: 62% → 85%</div>
+            <div style={{fontSize:12,color:"var(--accent-green)",fontWeight:600,marginBottom:6,animation:"fadeInUp 0.3s var(--ease-out) 0.15s backwards"}}>ML Confidence: 91%</div>
+
+            {/* Mini summary */}
+            <div style={{display:"flex",gap:6,marginBottom:16,animation:"fadeInUp 0.3s var(--ease-out) 0.2s backwards"}}>
+              {[{l:"Gangp/order",v:"-1.4"},{l:"Route eff.",v:"+23%"},{l:"Clusters",v:"3 hersteld"}].map((s,i)=>(
+                <div key={i} style={{flex:1,background:"var(--bg-card)",borderRadius:6,padding:"8px 6px"}}>
+                  <div style={{fontSize:8,color:"var(--text-tertiary)"}}>{s.l}</div>
+                  <div style={{fontSize:14,fontWeight:800,fontFamily:"var(--font-mono)",color:"var(--accent-green)"}}>{s.v}</div>
+                </div>
+              ))}
+            </div>
+
+            <button onPointerDown={startHold} onPointerUp={cancelHold} onPointerLeave={cancelHold} style={{
+              width:"100%",height:48,borderRadius:"var(--radius-md)",border:"2px solid",
+              borderColor:holding?"var(--accent-green)":"var(--border-medium)",cursor:"pointer",
+              background:holding?`linear-gradient(90deg, rgba(54,216,158,0.25) ${holdProgress}%, var(--bg-elevated) ${holdProgress}%)`:"var(--bg-elevated)",
+              color:holding?"var(--accent-green)":"var(--text-primary)",fontSize:13,fontWeight:700,
+              transition:holding?"none":"all 0.2s ease",userSelect:"none",touchAction:"none",
+              animation:"fadeInUp 0.3s var(--ease-out) 0.25s backwards",
+            }}>
+              {holding?`${Math.round(holdProgress)}% — Blijf vasthouden...`:"⏎ Houd ingedrukt om te bevestigen"}
+            </button>
+            <div style={{fontSize:9,color:"var(--text-tertiary)",marginTop:6}}>Instructies worden direct naar het WMS verzonden</div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -977,10 +1048,10 @@ export default function WarehousePage(){
         </div>
         <div style={{flex:1,display:"flex",position:"relative",overflow:"hidden"}}>
           <Map level={level} onHover={onHover} onSelect={setSelected} onShowProposal={()=>{setShowProposal(true);setSelected(null);}} clearSuboptimal={shouldClearSuboptimal} onPickUpdate={setLivePicks} onSuboptimalUpdate={setSuboptimalCount}/>
-          {showProposal&&<ReslotProposal suboptimalCount={20} onConfirm={()=>{setShowProposal(false);setShowConfirmToast(true);setShouldClearSuboptimal(true);}} onCancel={()=>setShowProposal(false)}/>}
         </div>
         {hovered&&<Tip loc={hovered.loc} x={hovered.x} y={hovered.y}/>}
       </div>
+      {showProposal&&<ReslotProposal suboptimalCount={suboptimalCount||20} onConfirm={()=>{setShowProposal(false);setShowConfirmToast(true);setShouldClearSuboptimal(true);setSuboptimalCount(0);}} onCancel={()=>setShowProposal(false)}/>}
       {selected&&!showProposal&&!showNewSkuWizard&&<Detail loc={selected} onClose={()=>setSelected(null)}/>}
       {showConfirmToast&&<ConfirmToaster onDone={()=>setShowConfirmToast(false)}/>}
       {showNewSkuWizard&&<NewSkuWizard onConfirm={()=>{setShowNewSkuWizard(false);setNewSkuReady(false);setShowConfirmToast(true);}} onCancel={()=>setShowNewSkuWizard(false)}/>}
