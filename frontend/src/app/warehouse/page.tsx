@@ -916,7 +916,7 @@ function CommandCenter({picks,suboptimalCount,newSkuReady,onOpenReslot,onOpenNew
 /* ═══ LEGEND ═══ */
 function Legend(){
   return(
-    <div style={{position:"absolute",top:72,right:16,background:"var(--bg-elevated)",border:"1px solid var(--border-medium)",borderRadius:"var(--radius-md)",padding:"12px 16px",boxShadow:"var(--shadow-md)",fontSize:11,animation:"fadeInUp 0.3s var(--ease-out) 0.15s backwards"}}>
+    <div style={{position:"absolute",top:8,right:16,background:"var(--bg-elevated)",border:"1px solid var(--border-medium)",borderRadius:"var(--radius-md)",padding:"12px 16px",boxShadow:"var(--shadow-md)",fontSize:11,animation:"fadeInUp 0.3s var(--ease-out) 0.15s backwards",zIndex:4}}>
       <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8,fontWeight:600}}>Velocity</div>
       {([["A","Snellopers"],["B","Frequent"],["C","Normaal"],["D","Langzaam"]]as const).map(([v,label])=>(
         <div key={v} style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}><span style={{width:10,height:10,borderRadius:3,background:VCOL[v as Velocity]}}/><span style={{color:"var(--text-secondary)",fontWeight:450}}>{label}</span></div>
@@ -964,6 +964,15 @@ export default function WarehousePage(){
               <button key={l} onClick={()=>setLevel(l===level?0:l)} style={{width:30,height:30,borderRadius:"var(--radius-sm)",border:`1.5px solid ${level===l?"var(--accent-purple)":"var(--border-medium)"}`,background:level===l?"var(--accent-purple)":"var(--bg-surface)",color:level===l?"#fff":"var(--text-secondary)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-mono)",boxShadow:level===l?"var(--shadow-glow-purple)":"none",transition:"all 0.15s ease"}}>{l}</button>
             ))}
             <button onClick={()=>setLevel(0)} style={{height:30,padding:"0 14px",borderRadius:"var(--radius-sm)",border:`1.5px solid ${level===0?"var(--accent-purple)":"var(--border-medium)"}`,background:level===0?"var(--accent-purple)":"var(--bg-surface)",color:level===0?"#fff":"var(--text-secondary)",fontSize:11,fontWeight:600,cursor:"pointer",boxShadow:level===0?"var(--shadow-glow-purple)":"none",transition:"all 0.15s ease"}}>Alle</button>
+            {/* Inline legend */}
+            <div style={{display:"flex",gap:10,marginLeft:16,paddingLeft:16,borderLeft:"1px solid var(--border-medium)"}}>
+              {([["A","Snel","#34d89e"],["B","Freq","#f0c040"],["C","Norm","#5ba8ff"],["D","Laag","#8090b8"]]as const).map(([v,label,color])=>(
+                <div key={v} style={{display:"flex",alignItems:"center",gap:4}}>
+                  <span style={{width:8,height:8,borderRadius:2,background:color}}/>
+                  <span style={{fontSize:10,color:"var(--text-tertiary)",fontWeight:450}}>{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         <div style={{flex:1,display:"flex",position:"relative",overflow:"hidden"}}>
@@ -971,7 +980,6 @@ export default function WarehousePage(){
           {showProposal&&<ReslotProposal suboptimalCount={20} onConfirm={()=>{setShowProposal(false);setShowConfirmToast(true);setShouldClearSuboptimal(true);}} onCancel={()=>setShowProposal(false)}/>}
         </div>
         {hovered&&<Tip loc={hovered.loc} x={hovered.x} y={hovered.y}/>}
-        <Legend/>
       </div>
       {selected&&!showProposal&&!showNewSkuWizard&&<Detail loc={selected} onClose={()=>setSelected(null)}/>}
       {showConfirmToast&&<ConfirmToaster onDone={()=>setShowConfirmToast(false)}/>}
