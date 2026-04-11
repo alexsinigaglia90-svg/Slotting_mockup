@@ -134,7 +134,7 @@ function Sidebar({active,onChange}:{active:string;onChange:(v:string)=>void}){
 }
 
 /* ═══ ZOOMABLE WAREHOUSE MAP WITH LIVE PICKS ═══ */
-function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal,onPickUpdate,onSuboptimalUpdate}:{level:number;onHover:(l:Loc|null,x:number,y:number)=>void;onSelect:(l:Loc|null)=>void;onShowProposal:()=>void;clearSuboptimal:boolean;onPickUpdate:(n:number)=>void;onSuboptimalUpdate:(n:number)=>void}){
+function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal,onPickUpdate,onSuboptimalUpdate,reslotHighlights}:{level:number;onHover:(l:Loc|null,x:number,y:number)=>void;onSelect:(l:Loc|null)=>void;onShowProposal:()=>void;clearSuboptimal:boolean;onPickUpdate:(n:number)=>void;onSuboptimalUpdate:(n:number)=>void;reslotHighlights:Set<string>}){
   const filtered=level===0?LOCS.filter(l=>l.level===1):LOCS.filter(l=>l.level===level);
   const [scale,setScale]=useState(1);
   const [pan,setPan]=useState({x:0,y:0});
@@ -218,22 +218,46 @@ function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal,onPickUpdate
       {/* Suboptimal alert removed — handled by CommandCenter */}
       {/* Zoomable content */}
       <div style={{transform:`translate(${pan.x}px,${pan.y}px) scale(${scale})`,transformOrigin:"0 0",padding:"20px 24px",willChange:"transform"}}>
-        <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 14px",borderRadius:"var(--radius-full)",background:"rgba(54,216,158,0.12)",border:"1px solid rgba(54,216,158,0.25)",fontSize:11,fontWeight:600,color:"var(--accent-green)",marginBottom:14}}>
-          <span style={{width:7,height:7,borderRadius:"50%",background:"var(--accent-green)",animation:"pulse 2s ease infinite"}}/>PICKING START · Live monitoring actief
+        {/* Depot + live status */}
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+          <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 14px",borderRadius:"var(--radius-full)",background:"rgba(54,216,158,0.12)",border:"1px solid rgba(54,216,158,0.25)",fontSize:11,fontWeight:600,color:"var(--accent-green)"}}>
+            <span style={{width:7,height:7,borderRadius:"50%",background:"var(--accent-green)",animation:"pulse 2s ease infinite"}}/>PICKING START
+          </div>
+          <div style={{fontSize:9,color:"var(--text-tertiary)"}}>DC Echt · Live monitoring</div>
         </div>
+
+        {/* Zone labels */}
+        <div style={{display:"flex",gap:8,marginBottom:6}}>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>
+            <span style={{width:3,height:12,borderRadius:1,background:"var(--accent-green)",opacity:0.5}}/>
+            <span style={{fontSize:8,color:"var(--text-tertiary)",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.08em"}}>Forward Pick Zone</span>
+          </div>
+          <div style={{flex:1}}/>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>
+            <span style={{width:3,height:12,borderRadius:1,background:"var(--accent-purple)",opacity:0.5}}/>
+            <span style={{fontSize:8,color:"var(--text-tertiary)",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.08em"}}>Bulk Storage</span>
+          </div>
+        </div>
+
         <div style={{display:"flex",gap:8}}>
           {Array.from({length:NUM_AISLES},(_,ai)=>{
             const al=filtered.filter(l=>l.aisle===ai);
             const left=al.filter(l=>l.side==="L").sort((a,b)=>a.position-b.position);
             const right=al.filter(l=>l.side==="R").sort((a,b)=>a.position-b.position);
             const totalPicks=al.reduce((s,l)=>s+l.picksWeek,0);
+            const isForwardPick=ai<5;
+            const isBulk=ai>=10;
+            // Zone separator line between forward pick and regular
+            const showZoneLine=ai===5||ai===10;
             return(
-              <div key={ai} className="aisle-enter" style={{display:"flex",flexDirection:"column",alignItems:"center",animationDelay:`${ai*0.06}s`}}>
-                <div style={{textAlign:"center",marginBottom:4}}>
-                  <div style={{fontSize:11,fontWeight:700,fontFamily:"var(--font-mono)",color:"var(--text-secondary)"}}>A{String(ai+1).padStart(2,"0")}</div>
-                  <div style={{fontSize:9,color:"var(--text-tertiary)",fontWeight:500}}>{totalPicks}/wk</div>
-                </div>
-                <div style={{display:"flex",gap:6}}>
+              <div key={ai} style={{display:"flex",gap:0}}>
+                {showZoneLine&&<div style={{width:2,background:ai===5?"var(--accent-green)":"var(--accent-purple)",opacity:0.15,borderRadius:1,margin:"20px 3px 0 3px"}}/>}
+                <div className="aisle-enter" style={{display:"flex",flexDirection:"column",alignItems:"center",animationDelay:`${ai*0.06}s`}}>
+                  <div style={{textAlign:"center",marginBottom:4}}>
+                    <div style={{fontSize:11,fontWeight:700,fontFamily:"var(--font-mono)",color:isForwardPick?"var(--accent-green)":isBulk?"var(--text-tertiary)":"var(--text-secondary)",opacity:isForwardPick?0.9:isBulk?0.5:0.7}}>A{String(ai+1).padStart(2,"0")}</div>
+                    <div style={{fontSize:9,color:"var(--text-tertiary)",fontWeight:500}}>{totalPicks}/wk</div>
+                  </div>
+                  <div style={{display:"flex",gap:6}}>
                   {[left,right].map((side,si)=>(
                     <div key={si} style={{display:"flex",flexDirection:"column",gap:1}}>
                       {side.map((loc,ci)=>(
@@ -248,6 +272,8 @@ function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal,onPickUpdate
                             cursor:loc.velocity!=="empty"?"pointer":"default",
                             ...(activePicks.has(loc.id)
                               ?{animation:"pickFlash 0.6s ease-out",zIndex:5}
+                              :reslotHighlights.has(loc.id)
+                              ?{animation:"suboptimalPulse 1.5s ease-in-out infinite",outline:"2px solid var(--accent-cict)",outlineOffset:"1px",zIndex:4,filter:"brightness(1.3)"}
                               :suboptimal.has(loc.id)
                               ?{animation:"suboptimalPulse 2s ease-in-out infinite",outline:"1.5px solid rgba(255,92,108,0.6)",outlineOffset:"1px",zIndex:3}
                               :{animation:`cellAppear 0.3s var(--ease-spring) ${ai*0.06+ci*0.008}s backwards`}),
@@ -257,6 +283,7 @@ function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal,onPickUpdate
                     </div>
                   ))}
                 </div>
+              </div>
               </div>
             );
           })}
@@ -281,8 +308,9 @@ function SuboptimalAlert({count,onViewProposal}:{count:number;onViewProposal:()=
 }
 
 /* ═══ RESLOT PROPOSAL — floating toaster with tabs ═══ */
-function ReslotProposal({suboptimalCount,onConfirm,onCancel}:{suboptimalCount:number;onConfirm:()=>void;onCancel:()=>void}){
+function ReslotProposal({suboptimalCount,onConfirm,onCancel,onTabChange}:{suboptimalCount:number;onConfirm:()=>void;onCancel:()=>void;onTabChange?:(tab:number)=>void}){
   const[tab,setTab]=useState(0);
+  const changeTab=(t:number)=>{setTab(t);onTabChange?.(t);};
   const[holding,setHolding]=useState(false);
   const[holdProgress,setHoldProgress]=useState(0);
   const holdTimer=useRef<ReturnType<typeof setInterval>|null>(null);
@@ -325,7 +353,7 @@ function ReslotProposal({suboptimalCount,onConfirm,onCancel}:{suboptimalCount:nu
       {/* Tabs */}
       <div style={{display:"flex",borderBottom:"1px solid var(--border-light)",flexShrink:0}}>
         {tabs.map((t,i)=>(
-          <button key={i} onClick={()=>setTab(i)} style={{flex:1,padding:"8px 0",border:"none",cursor:"pointer",fontSize:10,fontWeight:tab===i?600:400,color:tab===i?"var(--accent-purple)":"var(--text-tertiary)",background:"transparent",borderBottom:tab===i?"2px solid var(--accent-purple)":"2px solid transparent",transition:"all 0.15s ease",fontFamily:"var(--font-sans)"}}>{t}</button>
+          <button key={i} onClick={()=>changeTab(i)} style={{flex:1,padding:"8px 0",border:"none",cursor:"pointer",fontSize:10,fontWeight:tab===i?600:400,color:tab===i?"var(--accent-purple)":"var(--text-tertiary)",background:"transparent",borderBottom:tab===i?"2px solid var(--accent-purple)":"2px solid transparent",transition:"all 0.15s ease",fontFamily:"var(--font-sans)"}}>{t}</button>
         ))}
       </div>
 
@@ -1009,6 +1037,8 @@ export default function WarehousePage(){
   const[livePicks,setLivePicks]=useState(0);
   const[suboptimalCount,setSuboptimalCount]=useState(0);
   const[newSkuReady,setNewSkuReady]=useState(false);
+  const[season,setSeason]=useState<"current"|"lente"|"zomer"|"herfst"|"winter">("current");
+  const[reslotHighlights,setReslotHighlights]=useState<Set<string>>(new Set());
 
   // Trigger new SKU batch notification after 45 seconds
   useEffect(()=>{const t=setTimeout(()=>setNewSkuReady(true),45000);return()=>clearTimeout(t);},[]);
@@ -1044,14 +1074,44 @@ export default function WarehousePage(){
                 </div>
               ))}
             </div>
+            {/* Season toggle */}
+            <div style={{display:"flex",gap:4,marginLeft:16,paddingLeft:16,borderLeft:"1px solid var(--border-medium)"}}>
+              <span style={{fontSize:10,color:"var(--text-tertiary)",marginRight:2,alignSelf:"center"}}>Seizoen:</span>
+              {([["current","Nu"],["lente","🌱"],["zomer","☀️"],["herfst","🍂"],["winter","❄️"]]as const).map(([s,icon])=>(
+                <button key={s} onClick={()=>setSeason(s as typeof season)} style={{
+                  padding:"3px 8px",borderRadius:6,fontSize:10,fontWeight:season===s?600:400,
+                  border:`1px solid ${season===s?"var(--accent-cict)":"var(--border-medium)"}`,
+                  background:season===s?"rgba(226,212,74,0.15)":"transparent",
+                  color:season===s?"var(--accent-cict)":"var(--text-tertiary)",
+                  cursor:"pointer",transition:"all 0.15s ease",
+                }}>{icon}</button>
+              ))}
+            </div>
           </div>
         </div>
+        {/* Season change banner */}
+        {season!=="current"&&(
+          <div style={{padding:"8px 24px",background:"rgba(226,212,74,0.08)",borderBottom:"1px solid rgba(226,212,74,0.15)",display:"flex",alignItems:"center",gap:10,fontSize:11,animation:"fadeIn 0.3s var(--ease-out)"}}>
+            <span style={{color:"var(--accent-cict)",fontWeight:600}}>⚡ Seizoen simulatie actief:</span>
+            <span style={{color:"var(--text-secondary)"}}>
+              {season==="lente"?"Tuin-producten velocity +180% — herslotting naar forward-pick zone aanbevolen":
+               season==="zomer"?"BBQ/zwembad/zonnebrand velocity +340% — 47 SKUs moeten naar A01-A05":
+               season==="herfst"?"Tuin-producten velocity -60% — vrijmaken forward-pick voor herfst/winter":
+               "Decoratie/verlichting velocity +220% — kerst-SKUs naar forward-pick zone"}
+            </span>
+            <button onClick={()=>{setShowProposal(true);setSelected(null);}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:4,background:"var(--accent-cict)",color:"#1a1a2e",fontSize:10,fontWeight:700,border:"none",cursor:"pointer"}}>Herslot nu</button>
+          </div>
+        )}
         <div style={{flex:1,display:"flex",position:"relative",overflow:"hidden"}}>
-          <Map level={level} onHover={onHover} onSelect={setSelected} onShowProposal={()=>{setShowProposal(true);setSelected(null);}} clearSuboptimal={shouldClearSuboptimal} onPickUpdate={setLivePicks} onSuboptimalUpdate={setSuboptimalCount}/>
+          <Map level={level} onHover={onHover} onSelect={setSelected} onShowProposal={()=>{setShowProposal(true);setSelected(null);}} clearSuboptimal={shouldClearSuboptimal} onPickUpdate={setLivePicks} onSuboptimalUpdate={setSuboptimalCount} reslotHighlights={reslotHighlights}/>
         </div>
         {hovered&&<Tip loc={hovered.loc} x={hovered.x} y={hovered.y}/>}
       </div>
-      {showProposal&&<ReslotProposal suboptimalCount={suboptimalCount||20} onConfirm={()=>{setShowProposal(false);setShowConfirmToast(true);setShouldClearSuboptimal(true);setSuboptimalCount(0);}} onCancel={()=>setShowProposal(false)}/>}
+      {showProposal&&<ReslotProposal suboptimalCount={suboptimalCount||20} onConfirm={()=>{setShowProposal(false);setShowConfirmToast(true);setShouldClearSuboptimal(true);setSuboptimalCount(0);setReslotHighlights(new Set());}} onCancel={()=>{setShowProposal(false);setReslotHighlights(new Set());}} onTabChange={(tab:number)=>{
+        if(tab===1){// Verplaatsingen tab — highlight moves on map
+          setReslotHighlights(new Set(["A09-L14-L1","A03-R03-L1","A11-R08-L1","A04-L07-L1","A10-L19-L1","A03-R01-L1","A02-L04-L1","A12-R11-L1","A01-R09-L1","A14-L06-L1"]));
+        }else{setReslotHighlights(new Set());}
+      }}/>}
       {selected&&!showProposal&&!showNewSkuWizard&&<Detail loc={selected} onClose={()=>setSelected(null)}/>}
       {showConfirmToast&&<ConfirmToaster onDone={()=>setShowConfirmToast(false)}/>}
       {showNewSkuWizard&&<NewSkuWizard onConfirm={()=>{setShowNewSkuWizard(false);setNewSkuReady(false);setShowConfirmToast(true);}} onCancel={()=>setShowNewSkuWizard(false)}/>}
