@@ -8,708 +8,643 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-/* ───────────── RESET & BASE ───────────── */
+/* ===================== RESET ===================== */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth;font-size:16px;overflow-x:hidden}
-body{font-family:'Inter',sans-serif;color:#d1d5db;overflow-x:hidden;background:#0a0b10}
+body{font-family:'Inter',sans-serif;color:#d1d5db;overflow-x:hidden;background:#0a0b10;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 img{max-width:100%;display:block}
 a{color:inherit;text-decoration:none}
 
-/* ───────────── CSS VARIABLES ───────────── */
+/* ===================== VARIABLES ===================== */
 :root{
   --dark:#0a0b10;
-  --light:#ffffff;
+  --dark2:#0e0f16;
+  --light:#f8f8fc;
   --yellow:#E2D44A;
   --purple:#8b6fff;
+  --purple-dim:rgba(139,111,255,0.15);
+  --grey-900:#12131c;
   --grey-800:#1a1b26;
+  --grey-700:#2a2b3a;
   --grey-600:#4a4b5c;
+  --grey-500:#6b7280;
   --grey-400:#9ca3af;
+  --grey-300:#d1d5db;
   --grey-200:#e5e7eb;
-  --grey-100:#f3f4f6;
   --mono:'JetBrains Mono',monospace;
   --sans:'Inter',sans-serif;
   --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --ease-elastic:cubic-bezier(0.34,1.56,0.64,1);
+  --ease-smooth:cubic-bezier(0.4,0,0.2,1);
 }
 
-/* ───────────── SCROLL PROGRESS ───────────── */
+/* ===================== SCROLL PROGRESS ===================== */
 #scroll-progress{
   position:fixed;top:0;left:0;height:3px;
   background:linear-gradient(90deg,var(--yellow),var(--purple));
-  width:0%;z-index:9999;transition:none;
+  width:0%;z-index:9999;
+  box-shadow:0 0 20px var(--yellow),0 0 60px rgba(226,212,74,0.3);
+  border-radius:0 2px 2px 0;
 }
 
-/* ───────────── SECTION BASE ───────────── */
+/* ===================== NOISE OVERLAY ===================== */
+body::after{
+  content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:9998;opacity:0.035;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat:repeat;background-size:256px 256px;
+}
+
+/* ===================== SECTION BASE ===================== */
 .sect{
   position:relative;min-height:100vh;width:100%;
   display:flex;align-items:center;justify-content:center;
-  padding:80px 5vw;overflow:hidden;
+  padding:100px 6vw;overflow:hidden;
 }
-.sect--dark{background:var(--dark);color:#d1d5db}
+.sect--dark{background:var(--dark);color:var(--grey-300)}
 .sect--light{background:var(--light);color:#1a1b26}
-.sect--cta{background:var(--light);color:#1a1b26}
+.sect__inner{max-width:1100px;width:100%;position:relative;z-index:2}
 
-.sect__inner{
-  max-width:1120px;width:100%;position:relative;z-index:2;
-}
-
-/* ───────────── TYPOGRAPHY ───────────── */
-.headline{
-  font-weight:800;letter-spacing:-0.03em;line-height:1.08;
-  margin-bottom:0.4em;
-}
-.headline--xl{font-size:clamp(2.4rem,5.5vw,4.5rem)}
+/* ===================== TYPOGRAPHY ===================== */
+.headline{font-weight:800;letter-spacing:-0.035em;line-height:1.05;margin-bottom:0.5em}
+.headline--xl{font-size:clamp(2.6rem,6vw,5rem)}
 .headline--lg{font-size:clamp(2rem,4.5vw,3.6rem)}
-.headline--md{font-size:clamp(1.6rem,3vw,2.4rem)}
-
-.sub{
-  font-weight:300;font-size:clamp(1rem,1.8vw,1.35rem);
-  line-height:1.55;max-width:680px;margin-bottom:1.5em;opacity:0.85;
-}
-.sect--dark .sub{color:#a0aec0}
-.sect--light .sub{color:#4a4b5c}
-
-.body-text{
-  font-weight:400;font-size:clamp(0.95rem,1.4vw,1.1rem);
-  line-height:1.7;max-width:640px;
-}
-.sect--dark .body-text{color:#6b7280}
-.sect--light .body-text{color:#6b7280}
-
-.accent-yellow{color:var(--yellow)}
-.accent-purple{color:var(--purple)}
-
-.mono{font-family:var(--mono);font-weight:700}
-
-.sect--dark .headline{color:#f3f4f6}
+.headline--md{font-size:clamp(1.5rem,3vw,2.2rem)}
+.headline--sm{font-size:clamp(1.2rem,2vw,1.6rem)}
+.sub{font-weight:300;font-size:clamp(1rem,1.6vw,1.3rem);line-height:1.6;max-width:700px;margin-bottom:1.5em;opacity:0.88}
+.sect--dark .sub{color:#8a95a8}
+.sect--light .sub{color:var(--grey-600)}
+.sect--dark .headline{color:#f0f1f5}
 .sect--light .headline{color:#0a0b10}
+.accent-y{color:var(--yellow)}
+.accent-p{color:var(--purple)}
+.mono{font-family:var(--mono);font-weight:400;font-size:0.85em}
+.body-text{font-weight:400;font-size:clamp(0.95rem,1.4vw,1.08rem);line-height:1.75;max-width:640px;color:var(--grey-500)}
+.sect--light .body-text{color:var(--grey-600)}
+.label{font-family:var(--mono);font-weight:700;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:1.2em;display:inline-block}
+.sect--dark .label{color:var(--yellow)}
+.sect--light .label{color:var(--purple)}
 
-/* ───────────── ANIMATION (scroll reveal) ───────────── */
-.reveal-el{
-  opacity:0;transform:translateY(40px);
-  transition:opacity 0.8s var(--ease-out),transform 0.8s var(--ease-out);
-}
-.reveal-el--left{transform:translateX(-60px) translateY(0)}
-.reveal-el--right{transform:translateX(60px) translateY(0)}
-.reveal-el.is-visible{opacity:1;transform:translate(0,0)}
+/* ===================== WORD-BY-WORD ANIMATION ===================== */
+.word-reveal{display:inline-block;overflow:hidden;vertical-align:top;margin-right:0.22em}
+.word-reveal span{display:inline-block;transform:translateY(110%);opacity:0;transition:transform 0.7s var(--ease-elastic),opacity 0.5s var(--ease-out)}
+.word-reveal.is-visible span{transform:translateY(0);opacity:1}
 
-/* stagger children */
-.reveal-el.is-visible .stagger-1{transition-delay:0.1s}
-.reveal-el.is-visible .stagger-2{transition-delay:0.2s}
-.reveal-el.is-visible .stagger-3{transition-delay:0.3s}
-.reveal-el.is-visible .stagger-4{transition-delay:0.4s}
+/* ===================== GENERIC REVEAL ===================== */
+.rv{opacity:0;transition:opacity 0.9s var(--ease-out),transform 0.9s var(--ease-out)}
+.rv--up{transform:translateY(50px)}
+.rv--down{transform:translateY(-50px)}
+.rv--left{transform:translateX(-70px)}
+.rv--right{transform:translateX(70px)}
+.rv--scale{transform:scale(0.85);filter:blur(6px);transition:opacity 0.9s var(--ease-out),transform 0.9s var(--ease-out),filter 0.9s var(--ease-out)}
+.rv--blur{filter:blur(12px);transform:scale(0.97);transition:opacity 1s var(--ease-out),transform 1s var(--ease-out),filter 1s var(--ease-out)}
+.rv.is-v{opacity:1;transform:translate(0,0) scale(1);filter:blur(0)}
 
-/* ───────────── DECORATIVE ORBS ───────────── */
-.orb{
-  position:absolute;border-radius:50%;filter:blur(100px);
-  pointer-events:none;z-index:0;will-change:transform;
+/* ===================== SHIMMER TEXT ===================== */
+.shimmer{
+  background:linear-gradient(90deg,var(--yellow),#fff,var(--yellow));
+  background-size:200% 100%;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:shimmer 3s ease-in-out infinite;
 }
-.orb--yellow{background:rgba(226,212,74,0.12)}
-.orb--purple{background:rgba(139,111,255,0.10)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-/* ───────────── SCREENSHOT CARD ───────────── */
-.screenshot-card{
-  perspective:1200px;display:inline-block;
-}
-.screenshot-card img{
-  border-radius:14px;
-  box-shadow:0 20px 60px rgba(0,0,0,0.35),0 4px 16px rgba(0,0,0,0.18);
-  transform:rotateY(2deg);
-  transition:transform 0.6s var(--ease-out),box-shadow 0.6s var(--ease-out);
-}
-.screenshot-card:hover img{
-  transform:rotateY(0deg) scale(1.015);
-  box-shadow:0 30px 80px rgba(0,0,0,0.4),0 6px 20px rgba(0,0,0,0.22);
-}
-.screenshot-card figcaption{
-  margin-top:1.2em;font-size:0.92rem;font-weight:300;opacity:0.65;
-  max-width:540px;
+/* ===================== GRADIENT MESH BG ===================== */
+.mesh-bg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;overflow:hidden}
+.mesh-orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:0.25;will-change:transform}
+.mesh-orb--1{width:600px;height:600px;background:var(--purple);top:-10%;left:-10%;animation:orbFloat1 18s ease-in-out infinite}
+.mesh-orb--2{width:500px;height:500px;background:var(--yellow);bottom:-15%;right:-10%;animation:orbFloat2 22s ease-in-out infinite}
+.mesh-orb--3{width:400px;height:400px;background:#1e40af;top:40%;left:50%;animation:orbFloat3 15s ease-in-out infinite}
+@keyframes orbFloat1{0%,100%{transform:translate(0,0)}50%{transform:translate(80px,60px)}}
+@keyframes orbFloat2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,-80px)}}
+@keyframes orbFloat3{0%,100%{transform:translate(0,0)}33%{transform:translate(-40px,50px)}66%{transform:translate(50px,-30px)}}
+
+/* ===================== PARTICLES ===================== */
+.particles-container{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;background:rgba(226,212,74,0.3);animation:particleDrift linear infinite}
+@keyframes particleDrift{
+  0%{transform:translateY(0) translateX(0);opacity:0}
+  10%{opacity:1}
+  90%{opacity:1}
+  100%{transform:translateY(-100vh) translateX(40px);opacity:0}
 }
 
-/* ───────────── COUNTER ───────────── */
-.counter-row{
-  display:flex;gap:3rem;flex-wrap:wrap;margin:2em 0;
+/* ===================== SCREENSHOT CARDS ===================== */
+.screen-card{
+  position:relative;border-radius:12px;overflow:hidden;
+  box-shadow:0 25px 80px rgba(0,0,0,0.5),0 8px 30px rgba(0,0,0,0.3);
+  transform:perspective(1200px) rotateY(0deg) rotateX(0deg);
+  transition:transform 0.4s var(--ease-out),box-shadow 0.4s var(--ease-out);
 }
-.counter-item{text-align:center;min-width:140px}
-.counter-val{
-  font-family:var(--mono);font-weight:700;
-  font-size:clamp(2rem,4vw,3.4rem);line-height:1;
-  margin-bottom:0.2em;
+.screen-card:hover{
+  transform:perspective(1200px) rotateY(-2deg) rotateX(2deg) translateY(-8px);
+  box-shadow:0 35px 100px rgba(0,0,0,0.6),0 15px 40px rgba(0,0,0,0.4);
 }
-.counter-label{font-size:0.85rem;font-weight:400;opacity:0.55}
+.screen-card img{width:100%;display:block}
+.screen-card::before{
+  content:'';position:absolute;top:0;left:0;width:100%;height:100%;
+  background:linear-gradient(135deg,rgba(139,111,255,0.08),transparent 60%);
+  z-index:1;pointer-events:none;
+}
+.sect--light .screen-card{
+  box-shadow:0 25px 80px rgba(0,0,0,0.12),0 8px 30px rgba(0,0,0,0.08);
+}
+.sect--light .screen-card:hover{
+  box-shadow:0 35px 100px rgba(0,0,0,0.18),0 15px 40px rgba(0,0,0,0.1);
+}
+.screen-caption{font-family:var(--mono);font-size:0.78rem;margin-top:1.2em;opacity:0.6;line-height:1.5}
 
-/* ───────────── BULLETS ───────────── */
-.bullet-list{list-style:none;margin:1.5em 0}
-.bullet-list li{
-  position:relative;padding-left:1.6em;margin-bottom:1em;
+/* ===================== BULLET / ITEM LISTS ===================== */
+.item-list{list-style:none;margin:1.5em 0}
+.item-list li{
+  position:relative;padding:0.8em 0 0.8em 2em;
   font-size:clamp(0.95rem,1.3vw,1.05rem);line-height:1.6;
-  font-weight:400;
+  border-bottom:1px solid rgba(255,255,255,0.06);
 }
-.bullet-list li::before{
-  content:'';position:absolute;left:0;top:0.55em;
-  width:8px;height:8px;border-radius:2px;
-  background:var(--yellow);
+.sect--light .item-list li{border-bottom-color:rgba(0,0,0,0.06)}
+.item-list li::before{
+  content:'';position:absolute;left:0;top:50%;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--yellow);transform:translateY(-50%);
 }
-.sect--light .bullet-list li{color:#374151}
-.sect--dark .bullet-list li{color:#9ca3af}
+.item-list li:last-child{border-bottom:none}
 
-/* ───────────── TWO-COL ───────────── */
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-top:2em}
-@media(max-width:720px){.two-col{grid-template-columns:1fr}}
-.col-head{
-  font-weight:600;font-size:1rem;text-transform:uppercase;
-  letter-spacing:0.08em;margin-bottom:1em;
+/* ===================== COLUMNS ===================== */
+.cols{display:grid;gap:3rem;margin-top:2em}
+.cols--2{grid-template-columns:1fr 1fr}
+.cols--3{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:768px){
+  .cols--2,.cols--3{grid-template-columns:1fr}
 }
-.col-head--ml{color:var(--purple)}
-.col-head--or{color:var(--yellow)}
-.col-body li{
-  position:relative;padding-left:1.4em;margin-bottom:0.8em;
-  font-size:0.95rem;line-height:1.6;list-style:none;
-}
-.col-body li::before{
-  content:'';position:absolute;left:0;top:0.55em;
-  width:6px;height:6px;border-radius:50%;
-}
-.two-col .col:first-child .col-body li::before{background:var(--purple)}
-.two-col .col:last-child .col-body li::before{background:var(--yellow)}
+.col-card{padding:2em;border-radius:12px;position:relative;overflow:hidden}
+.sect--dark .col-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)}
+.sect--light .col-card{background:#fff;border:1px solid rgba(0,0,0,0.06);box-shadow:0 4px 24px rgba(0,0,0,0.04)}
+.col-card:hover{border-color:var(--yellow)}
+.col-card transition{border-color 0.3s}
 
-/* ───────────── THREE ITEMS ───────────── */
-.three-items{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:2em;
+/* ===================== STEPS ===================== */
+.steps{counter-reset:step;margin:2em 0}
+.step-item{
+  display:flex;gap:1.5em;align-items:flex-start;
+  padding:1.2em 0;position:relative;
 }
-@media(max-width:720px){.three-items{grid-template-columns:1fr}}
-.three-item{
-  padding:1.6em;border-radius:12px;
-}
-.sect--dark .three-item{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)}
-.sect--light .three-item{background:rgba(0,0,0,0.02);border:1px solid rgba(0,0,0,0.06)}
-.three-item h4{
-  font-weight:600;font-size:1rem;margin-bottom:0.5em;
-}
-.sect--dark .three-item h4{color:#f3f4f6}
-.sect--light .three-item h4{color:#0a0b10}
-.three-item p{font-size:0.9rem;line-height:1.6;opacity:0.65}
-
-/* ───────────── RESULTS TABLE ───────────── */
-.results-table{width:100%;border-collapse:collapse;margin:2em 0;font-size:0.95rem}
-.results-table th,.results-table td{
-  padding:1em 1.2em;text-align:left;
-}
-.results-table thead th{
-  font-weight:600;font-size:0.8rem;text-transform:uppercase;
-  letter-spacing:0.08em;border-bottom:2px solid rgba(255,255,255,0.08);
-}
-.results-table tbody td{
-  border-bottom:1px solid rgba(255,255,255,0.05);
-}
-.results-table .mono{color:var(--yellow)}
-.results-table .delta{
-  font-family:var(--mono);font-weight:700;color:var(--purple);
-}
-
-/* ───────────── STEPS ROW ───────────── */
-.steps-row{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:2.5em;
-}
-@media(max-width:720px){.steps-row{grid-template-columns:1fr}}
-.step{text-align:center;padding:2em 1.5em;border-radius:14px}
-.sect--light .step{background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.06)}
-.sect--dark .step{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)}
 .step-num{
-  font-family:var(--mono);font-weight:700;font-size:2rem;
-  color:var(--yellow);margin-bottom:0.3em;
+  flex-shrink:0;width:44px;height:44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:700;font-size:0.85rem;
+  border:2px solid var(--yellow);color:var(--yellow);
 }
-.step h4{font-weight:600;font-size:1rem;margin-bottom:0.4em}
-.sect--light .step h4{color:#0a0b10}
-.sect--dark .step h4{color:#f3f4f6}
-.step p{font-size:0.88rem;opacity:0.6;line-height:1.5}
+.step-text{font-size:clamp(0.95rem,1.3vw,1.05rem);line-height:1.6}
+.step-text strong{font-weight:600}
+.sect--dark .step-text{color:var(--grey-400)}
 
-/* ───────────── LOGO ───────────── */
-.cict-logo{display:inline-block}
-.cict-logo svg{width:48px;height:48px}
-.cict-logo--large svg{width:96px;height:96px}
-
-/* ───────────── HERO FOOTER ───────────── */
-.hero-footer{
-  display:flex;align-items:center;gap:0.8em;
-  margin-top:3em;font-size:0.85rem;font-weight:400;opacity:0.45;
+/* ===================== LAYOUT: SPLIT ===================== */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+.split--rev{direction:rtl}
+.split--rev>*{direction:ltr}
+@media(max-width:900px){
+  .split{grid-template-columns:1fr;gap:2rem}
+  .split--rev{direction:ltr}
 }
 
-/* ───────────── CTA SECTION ACCENT ───────────── */
-.sect--cta{
+/* ===================== HERO SPECIFIC ===================== */
+#hero{min-height:100vh;display:flex;align-items:center;padding-top:0;padding-bottom:0}
+#hero .headline{margin-bottom:0.3em}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:0.6em;
+  padding:0.5em 1.2em;border-radius:100px;
+  background:rgba(226,212,74,0.08);border:1px solid rgba(226,212,74,0.2);
+  font-family:var(--mono);font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--yellow);margin-bottom:2em;
+}
+.hero-badge svg{flex-shrink:0}
+.hero-scroll-cue{
+  position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:0.5em;
+  opacity:0.4;animation:scrollCue 2s ease-in-out infinite;
+}
+.hero-scroll-cue span{font-size:0.7rem;font-family:var(--mono);letter-spacing:0.1em;text-transform:uppercase}
+@keyframes scrollCue{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+
+/* ===================== SECTION: VRAAG (pulse bg) ===================== */
+.pulse-bg{
+  position:absolute;top:50%;left:50%;width:600px;height:600px;
+  border-radius:50%;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(139,111,255,0.12),transparent 70%);
+  animation:pulseGlow 4s ease-in-out infinite;
+}
+@keyframes pulseGlow{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.6}50%{transform:translate(-50%,-50%) scale(1.2);opacity:1}}
+
+/* ===================== CTA BORDER ===================== */
+.cta-border{
   border-top:4px solid var(--yellow);
-}
-.cta-closing{
-  margin-top:2.5em;padding:1.5em 2em;border-left:3px solid var(--yellow);
-  font-weight:400;font-size:1rem;line-height:1.6;color:#374151;
-  font-style:italic;
+  padding-top:3em;
 }
 
-/* ───────────── RESPONSIVE ───────────── */
-@media(max-width:640px){
-  .sect{padding:60px 6vw}
-  .counter-row{gap:1.5rem}
-  .counter-val{font-size:1.8rem}
+/* ===================== CICT LOGO ANIM ===================== */
+.cict-logo-large svg{width:120px;height:120px;margin-bottom:2em}
+.cict-logo-large svg rect{opacity:0;animation:logoRect 1s var(--ease-out) 0.3s forwards}
+.cict-logo-large svg path{stroke-dasharray:100;stroke-dashoffset:100;animation:logoArc 1.5s var(--ease-out) 0.6s forwards}
+.cict-logo-large svg text{opacity:0;animation:logoText 0.8s var(--ease-out) 1s forwards}
+@keyframes logoRect{to{opacity:1}}
+@keyframes logoArc{to{stroke-dashoffset:0}}
+@keyframes logoText{to{opacity:1}}
+
+/* ===================== COUNTER ANIM ===================== */
+.counter{font-family:var(--mono);font-weight:700;font-size:clamp(2rem,4vw,3.5rem);color:var(--yellow)}
+
+/* ===================== RESPONSIVE ===================== */
+@media(max-width:600px){
+  .sect{padding:60px 5vw}
+  .headline--xl{font-size:2.2rem}
+  .hero-badge{font-size:0.65rem;padding:0.4em 0.8em}
 }
 </style>
 </head>
 <body>
 
-<!-- Scroll progress bar -->
+<!-- SCROLL PROGRESS -->
 <div id="scroll-progress"></div>
 
-<!-- ═══════════ SECTION 1 — HERO ═══════════ -->
-<section class="sect sect--dark" id="s1">
-  <div class="orb orb--yellow" style="width:500px;height:500px;top:-10%;right:-10%" data-parallax="0.3"></div>
-  <div class="orb orb--purple" style="width:400px;height:400px;bottom:-15%;left:10%" data-parallax="0.3"></div>
+<!-- ============================== 1. HERO ============================== -->
+<section id="hero" class="sect sect--dark">
+  <div class="mesh-bg">
+    <div class="mesh-orb mesh-orb--1"></div>
+    <div class="mesh-orb mesh-orb--2"></div>
+    <div class="mesh-orb mesh-orb--3"></div>
+  </div>
+  <div class="particles-container" id="hero-particles"></div>
   <div class="sect__inner">
-    <div class="reveal-el">
-      <h1 class="headline headline--xl">Elke Stap Telt.<br><span class="accent-yellow">Letterlijk.</span></h1>
+    <div class="hero-badge rv rv--up" data-delay="0">
+      <svg width="28" height="28" viewBox="0 0 100 100" fill="none">
+        <rect x="5" y="5" width="55" height="55" rx="4" fill="#E2D44A"/>
+        <path d="M 52 8 Q 8 8, 8 52" stroke="#1a1a2e" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <text x="22" y="52" font-size="38" font-weight="900" fill="#1a1a2e" font-family="Inter,sans-serif">C</text>
+        <text x="48" y="80" font-size="26" font-weight="900" fill="#E2D44A" font-family="Inter,sans-serif">ICT</text>
+      </svg>
+      CICT Innovations
     </div>
-    <div class="reveal-el" style="transition-delay:0.15s">
-      <p class="sub">SlotPilot maakt van iedere vierkante meter magazijn een winstmotor &mdash; door AI te laten bepalen waar elk product staat, niet gewoonte.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.3s">
-      <p class="body-text">Jullie orderpickers lopen vandaag miljoenen meters per jaar. Niet omdat ze moeten, maar omdat producten staan waar ze ooit zijn neergezet &mdash; niet waar ze horen te staan.</p>
-    </div>
-    <div class="reveal-el hero-footer" style="transition-delay:0.45s">
-      <span class="cict-logo">
-        <svg width="48" height="48" viewBox="0 0 100 100" fill="none">
-          <rect x="5" y="5" width="55" height="55" rx="4" fill="#E2D44A"/>
-          <path d="M 52 8 Q 8 8, 8 52" stroke="#1a1a2e" stroke-width="6" fill="none" stroke-linecap="round"/>
-          <text x="22" y="52" font-size="38" font-weight="900" fill="#1a1a2e" font-family="Inter, sans-serif">C</text>
-          <text x="48" y="80" font-size="26" font-weight="900" fill="#d1d5db" font-family="Inter, sans-serif">ICT</text>
-        </svg>
-      </span>
-      <span>Gebouwd door CICT Innovations</span>
-    </div>
+    <h1 class="headline headline--xl word-anim" data-stagger="60">Elke Stap Telt. Letterlijk.</h1>
+    <p class="sub rv rv--up" data-delay="400">SlotPilot analyseert waar elk product staat — en waar het zou moeten staan. Continu, autonoom, en meetbaar.</p>
+  </div>
+  <div class="hero-scroll-cue">
+    <span>Scroll</span>
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 4v12M4 10l6 6 6-6"/></svg>
   </div>
 </section>
 
-<!-- ═══════════ SECTION 2 — PROBLEM ═══════════ -->
-<section class="sect sect--light" id="s2">
+<!-- ============================== 2. DE UITDAGING ============================== -->
+<section class="sect sect--light">
   <div class="sect__inner">
-    <div class="reveal-el">
-      <h2 class="headline headline--lg">Loopafstand Is<br><span class="accent-purple">Verborgen Verspilling</span></h2>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.12s">
-      <p class="sub">In een man-to-goods magazijn is 60-70% van de picktijd looptijd. Dat is geen operatie &mdash; dat is transport.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.24s">
-      <ul class="bullet-list">
-        <li>Een A-product op niveau 5 in gangpad 14 terwijl het 80 keer per week gepickt wordt</li>
-        <li>Co-occurrence clusters verspreid over 5 gangpaden: producten die altijd samen besteld worden maar nooit bij elkaar liggen</li>
-        <li>Veranderende patronen die pas na weken herkend worden</li>
-      </ul>
-    </div>
+    <span class="label rv rv--up">Het probleem</span>
+    <h2 class="headline headline--lg word-anim" data-stagger="40">Slotting Is Het Meest Onderschatte Probleem In Warehouse Operatie</h2>
+    <p class="sub rv rv--up" data-delay="200">De meeste magazijnen slotten op ervaring en gewoonte. Niet op data. Het resultaat: pickers die structureel meer lopen dan nodig.</p>
+    <ul class="item-list">
+      <li class="rv rv--left" data-delay="100">Producten die altijd samen besteld worden maar gangpaden apart staan</li>
+      <li class="rv rv--left" data-delay="200">Snellopers op moeilijk bereikbare posities</li>
+      <li class="rv rv--left" data-delay="300">Veranderende orderpatronen die pas na weken zichtbaar worden</li>
+    </ul>
   </div>
 </section>
 
-<!-- ═══════════ SECTION 3 — COST ═══════════ -->
-<section class="sect sect--dark" id="s3">
-  <div class="orb orb--purple" style="width:600px;height:600px;top:-20%;right:-15%" data-parallax="0.3"></div>
+<!-- ============================== 3. DE VRAAG ============================== -->
+<section class="sect sect--dark" style="text-align:center">
+  <div class="pulse-bg"></div>
+  <div class="sect__inner" style="display:flex;flex-direction:column;align-items:center">
+    <span class="label rv rv--up">De vraag</span>
+    <h2 class="headline headline--xl word-anim" data-stagger="50" style="max-width:900px">Wat Als Je Warehouse Zichzelf Kon Optimaliseren?</h2>
+    <p class="sub rv rv--up" data-delay="300" style="text-align:center">Niet een keer per kwartaal. Niet op basis van onderbuikgevoel. Maar continu, gebaseerd op wat er werkelijk gepickt wordt.</p>
+  </div>
+</section>
+
+<!-- ============================== 4. ONZE AANPAK ============================== -->
+<section class="sect sect--light">
   <div class="sect__inner">
-    <div class="reveal-el">
-      <h2 class="headline headline--lg">EUR <span class="accent-yellow">1-3M</span> Per Warehouse,<br>Per Jaar</h2>
+    <span class="label rv rv--up">Onze aanpak</span>
+    <h2 class="headline headline--lg rv rv--up" data-delay="100">Wetenschap, Geen Magie</h2>
+    <p class="sub rv rv--up" data-delay="200">SlotPilot combineert twee bewezen wetenschappelijke disciplines.</p>
+    <div class="cols cols--2">
+      <div class="col-card rv rv--left" data-delay="100">
+        <h3 class="headline headline--sm" style="margin-bottom:0.8em"><span class="accent-p">Machine Learning</span></h3>
+        <p class="body-text">Voorspelt welke producten samen gepickt worden, hoe de vraag verschuift, en welke artikelen sneller of langzamer gaan lopen.</p>
+      </div>
+      <div class="col-card rv rv--right" data-delay="200">
+        <h3 class="headline headline--sm" style="margin-bottom:0.8em"><span class="accent-y">Operations Research</span></h3>
+        <p class="body-text">Berekent de optimale plaatsing per product, de effici&euml;ntste pickroute, en de beste verdeling over zones.</p>
+      </div>
     </div>
-    <div class="reveal-el" style="transition-delay:0.12s">
-      <p class="sub">Suboptimale slotting is geen klein lek. Bij 3.500 orders per dag is elke extra meter per pick een kostenpost die exponentieel schaalt.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.24s">
-      <div class="counter-row">
-        <div class="counter-item">
-          <div class="counter-val accent-yellow"><span class="counter" data-from="159" data-to="28" data-suffix="m">159m</span></div>
-          <div class="counter-label">loopafstand / order</div>
-        </div>
-        <div class="counter-item">
-          <div class="counter-val accent-purple"><span class="counter" data-from="58" data-to="265" data-suffix="">58</span></div>
-          <div class="counter-label">picks / uur</div>
-        </div>
-        <div class="counter-item">
-          <div class="counter-val accent-yellow"><span class="counter" data-from="0" data-to="82" data-prefix="-" data-suffix="%">0%</span></div>
-          <div class="counter-label">route reductie</div>
+    <p class="body-text rv rv--up" data-delay="400" style="margin-top:2em;text-align:center;max-width:100%;font-weight:600;color:var(--grey-600)">Elke suggestie is traceerbaar. Geen black box.</p>
+  </div>
+</section>
+
+<!-- ============================== 5. HET PLATFORM ============================== -->
+<section class="sect sect--dark">
+  <div class="mesh-bg">
+    <div class="mesh-orb" style="width:500px;height:500px;background:var(--purple);top:20%;right:-15%;filter:blur(140px);opacity:0.15;animation:orbFloat2 20s ease-in-out infinite"></div>
+  </div>
+  <div class="particles-container" data-particles="8"></div>
+  <div class="sect__inner">
+    <div class="split">
+      <div>
+        <span class="label rv rv--up">Het platform</span>
+        <h2 class="headline headline--lg rv rv--up" data-delay="100">Gebouwd Om Mee Te Werken</h2>
+        <p class="sub rv rv--up" data-delay="200">SlotPilot is middleware — het zit tussen het WMS en de werkvloer. Geen vervanging, een versterking.</p>
+        <p class="screen-caption rv rv--up" data-delay="300">De warehouse map toont elke locatie, elke SKU, elke pickfrequentie. Interactief en real-time.</p>
+      </div>
+      <div class="rv rv--right" data-delay="300">
+        <div class="screen-card">
+          <img src="assets/screenshots/warehouse-map.png" alt="Warehouse Map — SlotPilot" loading="lazy">
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ SECTION 4 — APPROACH ═══════════ -->
-<section class="sect sect--light" id="s4">
+<!-- ============================== 6. LIVE MONITORING ============================== -->
+<section class="sect sect--light">
   <div class="sect__inner">
-    <div class="reveal-el">
-      <h2 class="headline headline--lg">Machine Learning Ontmoet<br><span class="accent-purple">Operationeel Onderzoek</span></h2>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.12s">
-      <p class="sub">Twee wetenschappelijke disciplines die samen de hele slotting-keten afdekken.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.24s">
-      <div class="two-col">
-        <div class="col">
-          <div class="col-head col-head--ml">ML Voorspelt</div>
-          <ul class="col-body">
-            <li>Demand forecasting per SKU</li>
-            <li>Affiniteitsanalyse via co-occurrence clustering</li>
-            <li>Velocity classificatie: dynamische ABC+ indeling</li>
-          </ul>
-        </div>
-        <div class="col">
-          <div class="col-head col-head--or">OR Optimaliseert</div>
-          <ul class="col-body">
-            <li>Slotting solver: SKU naar locatie toewijzing</li>
-            <li>Pick-route optimalisatie: kortste route per order</li>
-            <li>Zone balancering: werklastverdeling over gangpaden</li>
-          </ul>
+    <div class="split split--rev">
+      <div>
+        <span class="label rv rv--up">Live monitoring</span>
+        <h2 class="headline headline--lg rv rv--up" data-delay="100">Het Systeem Kijkt Mee</h2>
+        <p class="sub rv rv--up" data-delay="200">SlotPilot volgt elke pick en detecteert automatisch wanneer de huidige slotting niet meer optimaal is.</p>
+        <ul class="item-list">
+          <li class="rv rv--up" data-delay="250">Real-time pick monitoring</li>
+          <li class="rv rv--up" data-delay="350">Automatische suboptimale detectie</li>
+          <li class="rv rv--up" data-delay="450">Proactieve herslotting suggesties</li>
+        </ul>
+      </div>
+      <div class="rv rv--left" data-delay="200">
+        <div class="screen-card">
+          <img src="assets/screenshots/command-center.png" alt="Command Center — SlotPilot" loading="lazy">
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ SECTION 5 — PLATFORM ═══════════ -->
-<section class="sect sect--dark" id="s5">
-  <div class="orb orb--yellow" style="width:450px;height:450px;bottom:-10%;left:-10%" data-parallax="0.3"></div>
-  <div class="sect__inner">
-    <div class="reveal-el">
-      <h2 class="headline headline--lg">Het Hele Magazijn<br><span class="accent-yellow">In Een Scherm</span></h2>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.12s">
-      <p class="sub">Een interactieve warehouse map met 3.000 locaties over 15 gangpaden en 5 niveaus.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.24s">
-      <figure class="screenshot-card">
-        <img src="assets/screenshots/warehouse-map.png" alt="SlotPilot warehouse map interface" loading="lazy">
-        <figcaption>Kleurgecodeerd op velocity &mdash; van snellopers tot langzaamlopers. Elke locatie klikbaar voor deep-dive analyse.</figcaption>
-      </figure>
-    </div>
+<!-- ============================== 7. HERSLOTTING ============================== -->
+<section class="sect sect--dark">
+  <div class="mesh-bg">
+    <div class="mesh-orb" style="width:450px;height:450px;background:var(--yellow);top:60%;left:-10%;filter:blur(130px);opacity:0.1;animation:orbFloat1 16s ease-in-out infinite"></div>
   </div>
-</section>
-
-<!-- ═══════════ SECTION 6 — LIVE INTELLIGENCE ═══════════ -->
-<section class="sect sect--light" id="s6">
-  <div class="sect__inner">
-    <div class="reveal-el">
-      <h2 class="headline headline--lg">Command Center<br><span class="accent-purple">Dat Nooit Slaapt</span></h2>
+  <div class="sect__inner" style="text-align:center;display:flex;flex-direction:column;align-items:center">
+    <span class="label rv rv--up">Herslotting</span>
+    <h2 class="headline headline--lg rv rv--up" data-delay="100">Van Inzicht Naar Actie</h2>
+    <p class="sub rv rv--up" data-delay="200" style="text-align:center">Wanneer het systeem een verbetering ziet, toont het exact welke producten waar naartoe moeten — en waarom.</p>
+    <div class="rv rv--scale" data-delay="300" style="margin:2em auto;max-width:800px;width:100%">
+      <div class="screen-card">
+        <img src="assets/screenshots/reslot-proposal.png" alt="Reslot Proposal — SlotPilot" loading="lazy">
+      </div>
     </div>
-    <div class="reveal-el" style="transition-delay:0.12s">
-      <p class="sub">SlotPilot monitort elke pick in real-time. Niet om te rapporteren &mdash; om te handelen.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.24s">
-      <figure class="screenshot-card">
-        <img src="assets/screenshots/command-center.png" alt="SlotPilot command center dashboard" loading="lazy">
-      </figure>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.36s">
-      <div class="three-items">
-        <div class="three-item">
-          <h4>Live Pick Monitoring</h4>
-          <p>Real-time inzicht in elke pickbeweging door het magazijn.</p>
-        </div>
-        <div class="three-item">
-          <h4>Suboptimale Detectie</h4>
-          <p>Automatische herkenning van inefficiente plaatsingen.</p>
-        </div>
-        <div class="three-item">
-          <h4>Proactieve Alerts</h4>
-          <p>Meldingen voordat problemen impact hebben op doorlooptijd.</p>
-        </div>
+    <div class="steps" style="max-width:600px;text-align:left;width:100%">
+      <div class="step-item rv rv--up" data-delay="400">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Detectie:</strong> het systeem signaleert suboptimale locaties</div>
+      </div>
+      <div class="step-item rv rv--up" data-delay="500">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Voorstel:</strong> concrete verplaatsingen met onderbouwing</div>
+      </div>
+      <div class="step-item rv rv--up" data-delay="600">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Bevestiging:</strong> hold-to-slot stuurt de instructie naar het WMS</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ SECTION 7 — RESLOTTING ═══════════ -->
-<section class="sect sect--dark" id="s7">
-  <div class="orb orb--purple" style="width:500px;height:500px;top:10%;right:-15%" data-parallax="0.3"></div>
+<!-- ============================== 8. CORRELATIE ANALYSE ============================== -->
+<section class="sect sect--light">
+  <div class="sect__inner" style="text-align:center;display:flex;flex-direction:column;align-items:center">
+    <span class="label rv rv--up">Correlatie analyse</span>
+    <h2 class="headline headline--lg rv rv--up" data-delay="100">Het Brein Achter De Beslissingen</h2>
+    <p class="sub rv rv--up" data-delay="200" style="text-align:center">Een levende grafiek van productrelaties — gebouwd op echte orderdata, niet op aannames.</p>
+    <div class="rv rv--blur" data-delay="300" style="margin:2em auto;max-width:800px;width:100%">
+      <div class="screen-card">
+        <img src="assets/screenshots/neural-graph.png" alt="Neural Graph — SlotPilot" loading="lazy">
+      </div>
+    </div>
+    <p class="screen-caption rv rv--up" data-delay="500">Co-occurrence clusters, affiniteitsanalyse, en velocity classificatie — visueel gemaakt.</p>
+  </div>
+</section>
+
+<!-- ============================== 9. WAT DIT BETEKENT ============================== -->
+<section class="sect sect--dark">
+  <div class="mesh-bg">
+    <div class="mesh-orb" style="width:600px;height:600px;background:var(--yellow);top:-20%;left:30%;filter:blur(150px);opacity:0.08;animation:orbFloat3 24s ease-in-out infinite"></div>
+  </div>
+  <div class="particles-container" data-particles="6"></div>
+  <div class="sect__inner" style="text-align:center;display:flex;flex-direction:column;align-items:center">
+    <span class="label rv rv--up">Impact</span>
+    <h2 class="headline headline--lg word-anim" data-stagger="45" style="max-width:800px">De Impact Berekenen We Samen</h2>
+    <p class="sub rv rv--up" data-delay="300" style="text-align:center">Wij doen geen beloftes op basis van simulatiedata. De echte impact meten we op jullie warehouse, met jullie orders, met jullie producten.</p>
+    <div class="cols cols--3" style="margin-top:2.5em;max-width:900px">
+      <div class="col-card rv rv--up" data-delay="200" style="text-align:left">
+        <p class="body-text" style="max-width:100%">Jullie data bepaalt het resultaat — niet onze demo</p>
+      </div>
+      <div class="col-card rv rv--up" data-delay="350" style="text-align:left">
+        <p class="body-text" style="max-width:100%">Elke parameter is instelbaar op jullie situatie</p>
+      </div>
+      <div class="col-card rv rv--up" data-delay="500" style="text-align:left">
+        <p class="body-text" style="max-width:100%">Transparante methodiek — jullie zien exact hoe de berekening werkt</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== 10. SCHAAL ============================== -->
+<section class="sect sect--light">
   <div class="sect__inner">
-    <div class="reveal-el">
-      <h2 class="headline headline--lg">Van Detectie<br><span class="accent-yellow">Tot Uitvoering</span></h2>
+    <div style="text-align:center;margin-bottom:2em">
+      <span class="label rv rv--up">Schaalbaarheid</span>
+      <h2 class="headline headline--lg rv rv--up" data-delay="100">E&eacute;n Platform. Elk Warehouse.</h2>
+      <p class="sub rv rv--up" data-delay="200" style="margin-left:auto;margin-right:auto;text-align:center">Per locatie configureerbaar, centraal bestuurbaar. Van pilot op &eacute;&eacute;n DC tot uitrol over de hele organisatie.</p>
     </div>
-    <div class="reveal-el" style="transition-delay:0.12s">
-      <p class="sub">SlotPilot detecteert het probleem, analyseert de oplossing, en laat je met een hold-to-slot bevestigen.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.24s">
-      <figure class="screenshot-card">
-        <img src="assets/screenshots/reslot-proposal.png" alt="SlotPilot reslotting proposal view" loading="lazy">
-      </figure>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.36s">
-      <div class="three-items">
-        <div class="three-item">
-          <h4>Detectie en Analyse</h4>
-          <p>Automatische identificatie van suboptimale plaatsingen.</p>
-        </div>
-        <div class="three-item">
-          <h4>Impact Preview</h4>
-          <p>Route-efficientie <span class="mono accent-purple">62%</span> naar <span class="mono accent-yellow">85%</span></p>
-        </div>
-        <div class="three-item">
-          <h4>Hold-to-Slot</h4>
-          <p>Bevestiging naar WMS met een enkele actie.</p>
-        </div>
+    <div class="cols cols--3">
+      <div class="col-card rv rv--up" data-delay="100">
+        <h3 class="headline headline--sm" style="margin-bottom:0.5em"><span class="accent-p">Lokaal</span></h3>
+        <p class="body-text" style="max-width:100%">Eigen layout, eigen ML-modellen per warehouse</p>
+      </div>
+      <div class="col-card rv rv--up" data-delay="250">
+        <h3 class="headline headline--sm" style="margin-bottom:0.5em"><span class="accent-y">Centraal</span></h3>
+        <p class="body-text" style="max-width:100%">Uniforme rapportage en benchmarking</p>
+      </div>
+      <div class="col-card rv rv--up" data-delay="400">
+        <h3 class="headline headline--sm" style="margin-bottom:0.5em"><span class="accent-p">Integratie</span></h3>
+        <p class="body-text" style="max-width:100%">Standaard data-import, geen IT-project</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ SECTION 8 — BRAIN ═══════════ -->
-<section class="sect sect--light" id="s8">
-  <div class="sect__inner">
-    <div class="reveal-el">
-      <h2 class="headline headline--lg">Het Neurale Netwerk<br><span class="accent-purple">Achter Elke Beslissing</span></h2>
+<!-- ============================== 11. CICT ============================== -->
+<section class="sect sect--dark">
+  <div class="mesh-bg">
+    <div class="mesh-orb" style="width:500px;height:500px;background:var(--purple);top:30%;left:40%;filter:blur(160px);opacity:0.12;animation:orbFloat1 25s ease-in-out infinite"></div>
+  </div>
+  <div class="sect__inner" style="text-align:center;display:flex;flex-direction:column;align-items:center">
+    <div class="cict-logo-large rv rv--scale" data-delay="0">
+      <svg width="120" height="120" viewBox="0 0 100 100" fill="none">
+        <rect x="5" y="5" width="55" height="55" rx="4" fill="#E2D44A"/>
+        <path d="M 52 8 Q 8 8, 8 52" stroke="#1a1a2e" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <text x="22" y="52" font-size="38" font-weight="900" fill="#1a1a2e" font-family="Inter,sans-serif">C</text>
+        <text x="48" y="80" font-size="26" font-weight="900" fill="#f0f1f5" font-family="Inter,sans-serif">ICT</text>
+      </svg>
     </div>
-    <div class="reveal-el" style="transition-delay:0.12s">
-      <p class="sub">9 affiniteitsclusters, honderden correlaties, continu pulserend op actuele pickdata.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.24s">
-      <figure class="screenshot-card">
-        <img src="assets/screenshots/neural-graph.png" alt="SlotPilot neural affinity graph" loading="lazy">
-        <figcaption>Elk knooppunt is een SKU. Verbindingen tonen co-occurrence sterkte. Het netwerk leeft.</figcaption>
-      </figure>
-    </div>
+    <h2 class="headline headline--lg rv rv--up" data-delay="200">CICT Innovations</h2>
+    <p class="sub rv rv--up" data-delay="300" style="text-align:center">Wij bouwen software die operationele complexiteit vertaalt naar meetbare resultaten.</p>
+    <p class="body-text rv rv--up" data-delay="400" style="font-weight:600;font-size:1.15rem;color:var(--grey-300);max-width:100%;text-align:center">Geen platforms die alleen demo's overleven. Platforms die productie overleven.</p>
   </div>
 </section>
 
-<!-- ═══════════ SECTION 9 — RESULTS ═══════════ -->
-<section class="sect sect--dark" id="s9">
-  <div class="orb orb--yellow" style="width:500px;height:500px;top:-15%;left:-10%" data-parallax="0.3"></div>
-  <div class="sect__inner">
-    <div class="reveal-el">
-      <h2 class="headline headline--lg">Meetbare Verbetering,<br><span class="accent-yellow">Geen Beloftes</span></h2>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.12s">
-      <p class="sub">Elk getal komt uit de optimalisatie-engine en is reproduceerbaar op jullie eigen data.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.24s">
-      <table class="results-table">
-        <thead>
-          <tr>
-            <th>Metric</th>
-            <th>Voor</th>
-            <th>Na</th>
-            <th>Delta</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Loopafstand / order</td>
-            <td class="mono">159m</td>
-            <td class="mono accent-yellow"><span class="counter" data-from="159" data-to="28" data-suffix="m">159m</span></td>
-            <td class="delta">-82%</td>
-          </tr>
-          <tr>
-            <td>Route-efficientie</td>
-            <td class="mono">62%</td>
-            <td class="mono accent-yellow"><span class="counter" data-from="62" data-to="85" data-suffix="%">62%</span></td>
-            <td class="delta">+23%</td>
-          </tr>
-          <tr>
-            <td>Picks per uur</td>
-            <td class="mono">58</td>
-            <td class="mono accent-yellow"><span class="counter" data-from="58" data-to="265" data-suffix="">58</span></td>
-            <td class="delta">+357%</td>
-          </tr>
-          <tr>
-            <td>Orders per shift</td>
-            <td class="mono">17</td>
-            <td class="mono accent-yellow"><span class="counter" data-from="17" data-to="80" data-suffix="">17</span></td>
-            <td class="delta">+4.6x</td>
-          </tr>
-          <tr>
-            <td>Kosten per order</td>
-            <td class="mono">EUR 1.43</td>
-            <td class="mono accent-yellow">EUR <span class="counter" data-from="143" data-to="31" data-suffix="" data-divide="100">1.43</span></td>
-            <td class="delta">-78%</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════ SECTION 10 — SCALE ═══════════ -->
-<section class="sect sect--light" id="s10">
-  <div class="sect__inner">
-    <div class="reveal-el">
-      <h2 class="headline headline--lg">Van Een Warehouse<br><span class="accent-purple">Naar Zesentwintig</span></h2>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.12s">
-      <p class="sub">Per warehouse configureerbaar, centraal bestuurbaar.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.24s">
-      <div class="three-items">
-        <div class="three-item">
-          <h4>Per Warehouse</h4>
-          <p>Eigen layout, eigen ML-modellen, afgestemd op lokale operatie.</p>
-        </div>
-        <div class="three-item">
-          <h4>Centraal</h4>
-          <p>Uniforme KPI-rapportage, benchmarking over alle locaties.</p>
-        </div>
-        <div class="three-item">
-          <h4>Integratie</h4>
-          <p>CSV, Excel, of API import &mdash; past in jullie bestaande stack.</p>
-        </div>
+<!-- ============================== 12. VOLGENDE STAP ============================== -->
+<section class="sect sect--light">
+  <div class="sect__inner cta-border" style="text-align:center;display:flex;flex-direction:column;align-items:center">
+    <span class="label rv rv--up">Volgende stap</span>
+    <h2 class="headline headline--lg word-anim" data-stagger="45" style="max-width:800px">Laat Ons Het Tonen Op Jullie Data</h2>
+    <p class="sub rv rv--up" data-delay="300" style="text-align:center">Een pilot op &eacute;&eacute;n warehouse. Jullie data, jullie producten, jullie resultaat.</p>
+    <div class="steps" style="max-width:620px;text-align:left;width:100%;margin-top:1em">
+      <div class="step-item rv rv--up" data-delay="200">
+        <div class="step-num" style="border-color:var(--purple);color:var(--purple)">1</div>
+        <div class="step-text" style="color:var(--grey-600)"><strong style="color:#0a0b10">Wij ontvangen een dataset</strong> — orderhistorie en layout</div>
+      </div>
+      <div class="step-item rv rv--up" data-delay="350">
+        <div class="step-num" style="border-color:var(--purple);color:var(--purple)">2</div>
+        <div class="step-text" style="color:var(--grey-600)"><strong style="color:#0a0b10">SlotPilot draait op jullie data</strong> — binnen weken</div>
+      </div>
+      <div class="step-item rv rv--up" data-delay="500">
+        <div class="step-num" style="border-color:var(--purple);color:var(--purple)">3</div>
+        <div class="step-text" style="color:var(--grey-600)"><strong style="color:#0a0b10">Samen beoordelen we het resultaat</strong> en de business case</div>
       </div>
     </div>
+    <p class="rv rv--up" data-delay="650" style="margin-top:2.5em;font-weight:600;font-size:1.1rem;color:var(--grey-600)">Geen commitment. <span class="shimmer" style="font-weight:800">Wel inzicht.</span></p>
   </div>
 </section>
 
-<!-- ═══════════ SECTION 11 — CICT ═══════════ -->
-<section class="sect sect--dark" id="s11">
-  <div class="orb orb--yellow" style="width:400px;height:400px;bottom:-10%;right:5%" data-parallax="0.3"></div>
-  <div class="sect__inner" style="text-align:center">
-    <div class="reveal-el">
-      <div class="cict-logo cict-logo--large" style="margin-bottom:1.5em">
-        <svg width="96" height="96" viewBox="0 0 100 100" fill="none">
-          <rect x="5" y="5" width="55" height="55" rx="4" fill="#E2D44A"/>
-          <path d="M 52 8 Q 8 8, 8 52" stroke="#1a1a2e" stroke-width="6" fill="none" stroke-linecap="round"/>
-          <text x="22" y="52" font-size="38" font-weight="900" fill="#1a1a2e" font-family="Inter, sans-serif">C</text>
-          <text x="48" y="80" font-size="26" font-weight="900" fill="#d1d5db" font-family="Inter, sans-serif">ICT</text>
-        </svg>
-      </div>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.15s">
-      <h2 class="headline headline--lg">CICT Innovations</h2>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.25s">
-      <p class="sub" style="margin-left:auto;margin-right:auto">Wij bouwen software die operationele complexiteit vertaalt naar meetbare resultaten.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.35s">
-      <p class="body-text" style="margin-left:auto;margin-right:auto">Wij bouwen geen platforms die demo's overleven. Wij bouwen platforms die productie overleven.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════ SECTION 12 — CTA ═══════════ -->
-<section class="sect sect--cta" id="s12">
-  <div class="sect__inner" style="text-align:center">
-    <div class="reveal-el">
-      <h2 class="headline headline--lg">Laat Ons Het Bewijzen<br><span class="accent-yellow">Met Jullie Data</span></h2>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.12s">
-      <p class="sub" style="margin-left:auto;margin-right:auto">Een proof of concept op een warehouse, met jullie echte orderhistorie, binnen weken.</p>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.24s">
-      <div class="steps-row">
-        <div class="step">
-          <div class="step-num">1</div>
-          <h4>Data-Import Sessie</h4>
-          <p>Wij verbinden met jullie data en starten de analyse.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <h4>Proof of Concept</h4>
-          <p>Op jullie echte data, met meetbare resultaten.</p>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <h4>Business Case</h4>
-          <p>Onderbouwde case voor uitrol naar 26 warehouses.</p>
-        </div>
-      </div>
-    </div>
-    <div class="reveal-el" style="transition-delay:0.36s">
-      <div class="cta-closing">
-        Elk warehouse dat een maand langer ongeoptimaliseerd draait, kost jullie meetbaar geld.
-      </div>
-    </div>
-  </div>
-</section>
-
+<!-- ============================== JAVASCRIPT ============================== -->
 <script>
 (function(){
   'use strict';
 
-  /* ───── Scroll progress ───── */
-  var progressBar = document.getElementById('scroll-progress');
+  /* ---- Scroll progress ---- */
+  const prog = document.getElementById('scroll-progress');
   function updateProgress(){
-    var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    var pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-    progressBar.style.width = pct + '%';
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    prog.style.width = h > 0 ? (window.scrollY / h * 100) + '%' : '0%';
   }
+  window.addEventListener('scroll', updateProgress, {passive:true});
 
-  /* ───── Parallax orbs ───── */
-  var orbs = document.querySelectorAll('[data-parallax]');
-  function updateParallax(){
-    var scrollY = window.pageYOffset;
-    for(var i=0;i<orbs.length;i++){
-      var speed = parseFloat(orbs[i].getAttribute('data-parallax'));
-      orbs[i].style.transform = 'translateY(' + (scrollY * speed * -0.5) + 'px)';
+  /* ---- Particles ---- */
+  function createParticles(container, count){
+    for(let i=0;i<count;i++){
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random()*3 + 1;
+      p.style.cssText = `
+        width:${size}px;height:${size}px;
+        left:${Math.random()*100}%;
+        top:${Math.random()*100 + 100}%;
+        animation-duration:${Math.random()*12+8}s;
+        animation-delay:${Math.random()*8}s;
+        opacity:0;
+      `;
+      container.appendChild(p);
     }
   }
+  // Hero particles
+  const heroPart = document.getElementById('hero-particles');
+  if(heroPart) createParticles(heroPart, 18);
+  // Other particle containers
+  document.querySelectorAll('.particles-container[data-particles]').forEach(c=>{
+    createParticles(c, parseInt(c.dataset.particles)||8);
+  });
 
-  /* ───── Scroll listener (throttled via rAF) ───── */
-  var ticking = false;
-  window.addEventListener('scroll', function(){
-    if(!ticking){
-      requestAnimationFrame(function(){
-        updateProgress();
-        updateParallax();
-        ticking = false;
-      });
-      ticking = true;
-    }
+  /* ---- Word-by-word animation ---- */
+  document.querySelectorAll('.word-anim').forEach(el=>{
+    const text = el.textContent.trim();
+    const stagger = parseInt(el.dataset.stagger)||50;
+    el.textContent = '';
+    text.split(/\s+/).forEach((word, i)=>{
+      const wrapper = document.createElement('span');
+      wrapper.className = 'word-reveal';
+      const inner = document.createElement('span');
+      inner.textContent = word;
+      inner.style.transitionDelay = (i * stagger) + 'ms';
+      wrapper.appendChild(inner);
+      el.appendChild(wrapper);
+      // Add space
+      if(i < text.split(/\s+/).length - 1){
+        el.appendChild(document.createTextNode(' '));
+      }
+    });
+  });
+
+  /* ---- IntersectionObserver for reveals ---- */
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const el = entry.target;
+        const delay = parseInt(el.dataset.delay)||0;
+        // rv elements
+        if(el.classList.contains('rv')){
+          setTimeout(()=>el.classList.add('is-v'), delay);
+        }
+        // word-anim elements (parent)
+        if(el.classList.contains('word-anim') || el.querySelectorAll('.word-reveal').length > 0){
+          const target = el.classList.contains('word-anim') ? el : el;
+          setTimeout(()=>{
+            target.querySelectorAll('.word-reveal').forEach(w=>w.classList.add('is-visible'));
+          }, delay);
+        }
+        observer.unobserve(el);
+      }
+    });
+  }, {threshold:0.15, rootMargin:'0px 0px -60px 0px'});
+
+  // Observe all rv + word-anim elements
+  document.querySelectorAll('.rv, .word-anim').forEach(el=>observer.observe(el));
+
+  /* ---- Mouse parallax on screen-cards ---- */
+  document.querySelectorAll('.screen-card').forEach(card=>{
+    card.addEventListener('mousemove', e=>{
+      const rect = card.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = `perspective(1200px) rotateY(${x*6}deg) rotateX(${-y*6}deg) translateY(-4px)`;
+    });
+    card.addEventListener('mouseleave', ()=>{
+      card.style.transform = '';
+    });
+  });
+
+  /* ---- Hover micro-animations on col-cards ---- */
+  document.querySelectorAll('.col-card').forEach(card=>{
+    card.style.transition = 'transform 0.3s var(--ease-out), border-color 0.3s, box-shadow 0.3s';
+    card.addEventListener('mouseenter', ()=>{
+      card.style.transform = 'translateY(-4px)';
+    });
+    card.addEventListener('mouseleave', ()=>{
+      card.style.transform = '';
+    });
+  });
+
+  /* ---- Parallax layers on scroll ---- */
+  const meshOrbs = document.querySelectorAll('.mesh-orb');
+  let ticking = false;
+  function parallaxTick(){
+    const sy = window.scrollY;
+    meshOrbs.forEach((orb, i)=>{
+      const speed = [0.03, -0.02, 0.015][i % 3];
+      orb.style.transform = `translate(${Math.sin(sy*0.001 + i)*30}px, ${sy * speed}px)`;
+    });
+    ticking = false;
+  }
+  window.addEventListener('scroll', ()=>{
+    if(!ticking){ticking=true;requestAnimationFrame(parallaxTick)}
   }, {passive:true});
 
-  /* ───── IntersectionObserver for reveal ───── */
-  var reveals = document.querySelectorAll('.reveal-el');
-  var revealObs = new IntersectionObserver(function(entries){
-    entries.forEach(function(entry){
-      if(entry.isIntersecting){
-        entry.target.classList.add('is-visible');
-      }
-    });
-  }, {threshold:0.2});
-  reveals.forEach(function(el){ revealObs.observe(el); });
-
-  /* ───── Animated counters ───── */
-  var counters = document.querySelectorAll('.counter');
-  var counterAnimated = new WeakSet();
-
-  function animateCounter(el){
-    if(counterAnimated.has(el)) return;
-    counterAnimated.add(el);
-
-    var from = parseFloat(el.getAttribute('data-from')) || 0;
-    var to = parseFloat(el.getAttribute('data-to')) || 0;
-    var suffix = el.getAttribute('data-suffix') || '';
-    var prefix = el.getAttribute('data-prefix') || '';
-    var divide = parseFloat(el.getAttribute('data-divide')) || 0;
-    var duration = 2000;
-    var startTime = null;
-
-    function step(timestamp){
-      if(!startTime) startTime = timestamp;
-      var progress = Math.min((timestamp - startTime) / duration, 1);
-      // ease out cubic
-      var eased = 1 - Math.pow(1 - progress, 3);
-      var current = from + (to - from) * eased;
-
-      if(divide > 0){
-        el.textContent = prefix + (current / divide).toFixed(2) + suffix;
-      } else {
-        el.textContent = prefix + Math.round(current) + suffix;
-      }
-
-      if(progress < 1){
-        requestAnimationFrame(step);
-      }
-    }
-    requestAnimationFrame(step);
-  }
-
-  var counterObs = new IntersectionObserver(function(entries){
-    entries.forEach(function(entry){
-      if(entry.isIntersecting){
-        animateCounter(entry.target);
-      }
-    });
-  }, {threshold:0.3});
-  counters.forEach(function(el){ counterObs.observe(el); });
-
-  /* ───── Init ───── */
-  updateProgress();
 })();
 </script>
 </body>
