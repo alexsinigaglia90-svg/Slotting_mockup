@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { FunnelChart } from "@/components/ui/funnel-chart";
 
 /* ═══ MOCK DATA ═══ */
 const NUM_AISLES = 15;
@@ -445,69 +446,193 @@ function Tip({loc,x,y}:{loc:Loc;x:number;y:number}){
   );
 }
 
-/* ═══ DETAIL PANEL ═══ */
-function Detail({loc,onClose}:{loc:Loc;onClose:()=>void}){
-  const r=rng(loc.id.charCodeAt(3)*100+loc.position);
+/* ═══ CIRCULAR GAUGE (Apple Watch style) ═══ */
+function Gauge({value,max,label,color,size=64}:{value:number;max:number;label:string;color:string;size?:number}){
+  const pct=Math.min(100,Math.max(0,(value/max)*100));
+  const r=(size-8)/2;
+  const circ=2*Math.PI*r;
+  const offset=circ-(pct/100)*circ;
   return(
-    <div style={{width:380,minHeight:"100%",background:"var(--bg-surface)",borderLeft:"1px solid var(--border-light)",overflow:"auto",animation:"slideInRight 0.3s var(--ease-out)",padding:"24px",boxShadow:"-4px 0 16px rgba(0,0,0,0.2)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
-        <div>
-          <div style={{fontFamily:"var(--font-mono)",fontSize:15,fontWeight:700,marginBottom:6}}>{loc.id}</div>
-          <span style={{fontSize:11,fontWeight:600,padding:"3px 12px",borderRadius:"var(--radius-full)",background:VCOL[loc.velocity],color:"#fff"}}>{loc.velocity}-class · {loc.category}</span>
-        </div>
-        <button onClick={onClose} style={{width:28,height:28,borderRadius:"var(--radius-sm)",border:"1px solid var(--border-light)",background:"var(--bg-subtle)",color:"var(--text-secondary)",cursor:"pointer",fontSize:14,fontFamily:"var(--font-sans)",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+      <svg width={size} height={size} style={{transform:"rotate(-90deg)"}}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--bg-elevated)" strokeWidth={5}/>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={5} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} style={{transition:"stroke-dashoffset 0.8s var(--ease-out)"}}/>
+      </svg>
+      <div style={{position:"relative",marginTop:-size+4,width:size,height:size,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+        <div style={{fontSize:16,fontWeight:800,fontFamily:"var(--font-mono)",color}}>{Math.round(pct)}%</div>
       </div>
-      {loc.skuName&&<div style={{background:"var(--bg-card)",borderRadius:"var(--radius-md)",padding:16,marginBottom:16}}><div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Product</div><div style={{fontSize:15,fontWeight:600,marginBottom:3}}>{loc.skuName}</div><div style={{fontSize:11,color:"var(--text-tertiary)",fontFamily:"var(--font-mono)"}}>{loc.skuId}</div></div>}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-        {[{label:"Picks / week",val:String(loc.picksWeek),color:loc.picksWeek>50?"var(--velocity-a)":"var(--text-primary)"},{label:"Co-occurrence",val:`${loc.coScore}%`,color:loc.coScore>70?"var(--accent-green)":loc.coScore<40?"var(--accent-red)":"var(--accent-amber)"},{label:"Route score",val:`${loc.routeScore.toFixed(1)} gangp.`,color:loc.routeScore<2?"var(--accent-green)":loc.routeScore>3?"var(--accent-red)":"var(--accent-amber)"},{label:"Slotting score",val:`${loc.slottingScore}%`,color:loc.slottingScore>70?"var(--accent-green)":loc.slottingScore<35?"var(--accent-red)":"var(--accent-amber)"}].map((m,i)=>(
-          <div key={i} style={{background:"var(--bg-card)",borderRadius:"var(--radius-sm)",padding:"12px 14px"}}><div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:3}}>{m.label}</div><div style={{fontSize:22,fontWeight:700,fontFamily:"var(--font-mono)",color:m.color,letterSpacing:"-0.02em"}}>{m.val}</div></div>
-        ))}
-      </div>
-      <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-md)",padding:16,marginBottom:16}}>
-        <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Pick frequentie — 4 weken</div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:2,height:56}}>
-          {Array.from({length:28},(_,i)=>{const h=Math.max(3,r()*56*(loc.velocity==="A"?1:loc.velocity==="B"?0.5:0.2));return<div key={i} style={{flex:1,height:h,borderRadius:2,background:i>=21?"var(--velocity-a)":"var(--accent-purple)",opacity:i>=21?0.85:0.25}}/>;
-          })}
-        </div>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"var(--text-tertiary)",marginTop:6}}><span>4w</span><span>3w</span><span>2w</span><span>1w</span><span>Nu</span></div>
-      </div>
-      {/* ML/OR Assessment */}
-      <div style={{background:loc.slottingScore<35?"rgba(255,92,108,0.08)":"rgba(54,216,158,0.08)",borderRadius:"var(--radius-md)",padding:16,marginBottom:16,border:`1px solid ${loc.slottingScore<35?"rgba(255,92,108,0.15)":"rgba(54,216,158,0.15)"}`}}>
-        <div style={{fontSize:12,fontWeight:600,marginBottom:4,color:loc.slottingScore<35?"var(--accent-red)":"var(--accent-green)"}}>{loc.slottingScore<35?"⚠ Herslotting aanbevolen":"✓ Optimaal geslot"}</div>
-        <div style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.6}}>
-          {loc.slottingScore<35&&loc.picksWeek>30
-            ?`ML-analyse: dit product heeft ${loc.coScore}% co-occurrence met cluster "${loc.coCluster}" maar staat buiten die zone. Hergroepering verlaagt het gemiddeld aantal gangpaden per order van ${loc.routeScore.toFixed(1)} naar ~${(loc.routeScore*0.6).toFixed(1)}.`
-            :loc.slottingScore<35
-            ?`Dit product heeft een lage co-occurrence score (${loc.coScore}%) met de huidige zone. OR-solver suggereert verplaatsing naar ${loc.coCluster}-cluster voor betere route-efficiëntie.`
-            :`ML-model bevestigt: product is correct geplaatst in ${loc.coCluster}-cluster (co-occurrence ${loc.coScore}%). Route score ${loc.routeScore.toFixed(1)} gangpaden/order is binnen optimale range.`}
-        </div>
-      </div>
-      {/* Cluster info */}
-      <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-md)",padding:16,marginBottom:16}}>
-        <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>AI Slotting Factoren</div>
-        {[
-          {label:"Affinity Cluster",val:loc.coCluster,icon:"🔗"},
-          {label:"Co-occurrence Score",val:`${loc.coScore}%`,icon:"📊"},
-          {label:"Velocity Classificatie",val:`${loc.velocity}-class (${loc.velocity==="A"?"ML: hoge frequentie":loc.velocity==="B"?"ML: bovengemiddeld":loc.velocity==="C"?"ML: gemiddeld":"ML: laagfrequent"})`,icon:"⚡"},
-          {label:"Route Impact",val:`${loc.routeScore.toFixed(1)} gangpaden/order`,icon:"🛤️"},
-        ].map((f,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<3?"1px solid var(--border-light)":"none"}}>
-            <span style={{fontSize:12}}>{f.icon}</span>
-            <div style={{flex:1}}>
-              <div style={{fontSize:10,color:"var(--text-tertiary)"}}>{f.label}</div>
-              <div style={{fontSize:12,fontWeight:500}}>{f.val}</div>
+      <div style={{fontSize:9,color:"var(--text-tertiary)",fontWeight:500,textAlign:"center",marginTop:2}}>{label}</div>
+    </div>
+  );
+}
+
+/* ═══ BKLIT-STYLE BAR CHART ═══ */
+function BklitBarChart({data,color}:{data:number[];color:string}){
+  const max=Math.max(...data,1);
+  return(
+    <div style={{display:"flex",alignItems:"flex-end",gap:3,height:72,padding:"0 2px"}}>
+      {data.map((v,i)=>{
+        const h=Math.max(3,(v/max)*72);
+        const isRecent=i>=data.length-7;
+        return(
+          <div key={i} style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"flex-end",alignItems:"center",gap:0}}>
+            <div style={{
+              width:"100%",height:h,
+              borderRadius:"4px 4px 2px 2px",
+              background:isRecent?`linear-gradient(180deg, ${color}, ${color}88)`:
+                `linear-gradient(180deg, var(--bg-elevated), var(--bg-card))`,
+              opacity:isRecent?0.9:0.4,
+              transition:"height 0.4s var(--ease-out)",
+            }}/>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══ BKLIT-STYLE FUNNEL CHART ═══ */
+function BklitFunnel({data}:{data:{label:string;value:number;color:string}[]}){
+  const max=data[0]?.value||1;
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+      {data.map((d,i)=>{
+        const pct=(d.value/max)*100;
+        return(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:10,animation:`fadeInUp 0.3s var(--ease-out) ${i*0.08}s backwards`}}>
+            <div style={{width:80,fontSize:10,color:"var(--text-tertiary)",textAlign:"right",flexShrink:0}}>{d.label}</div>
+            <div style={{flex:1,height:24,background:"var(--bg-elevated)",borderRadius:6,overflow:"hidden",position:"relative"}}>
+              <div style={{
+                width:`${pct}%`,height:"100%",
+                borderRadius:6,
+                background:`linear-gradient(90deg, ${d.color}, ${d.color}99)`,
+                transition:"width 0.6s var(--ease-out)",
+                display:"flex",alignItems:"center",paddingLeft:8,
+              }}>
+                <span style={{fontSize:10,fontWeight:700,color:"#fff",fontFamily:"var(--font-mono)",textShadow:"0 1px 2px rgba(0,0,0,0.3)"}}>{d.value.toLocaleString()}</span>
+              </div>
             </div>
           </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══ DETAIL TOASTER — compact floating panel with tabs ═══ */
+function Detail({loc,onClose}:{loc:Loc;onClose:()=>void}){
+  const[tab,setTab]=useState(0);
+  const r=rng(loc.id.charCodeAt(3)*100+loc.position);
+  const barData=Array.from({length:28},()=>Math.max(1,Math.round(r()*(loc.velocity==="A"?80:loc.velocity==="B"?40:loc.velocity==="C"?15:5))));
+  const funnelData=[
+    {label:"Dagorders",value:3500,color:"var(--accent-purple)"},
+    {label:"Dit SKU",value:Math.round(loc.picksWeek*5.2),color:"var(--velocity-a)"},
+    {label:"Deze zone",value:Math.round(loc.picksWeek*3.8),color:"var(--velocity-b)"},
+    {label:"Locatie",value:loc.picksWeek,color:"var(--accent-green)"},
+  ];
+  const tabs=["Overzicht","Charts","AI Analyse"];
+
+  return(
+    <div style={{position:"fixed",bottom:24,right:24,width:340,background:"var(--bg-surface)",border:"1px solid var(--border-medium)",borderRadius:"var(--radius-lg)",overflow:"hidden",animation:"toasterIn 0.4s var(--ease-out)",boxShadow:"var(--shadow-xl)",zIndex:50}}>
+      {/* Header — compact */}
+      <div style={{padding:"12px 16px",borderBottom:"1px solid var(--border-light)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:"var(--radius-full)",background:VCOL[loc.velocity],color:"#fff"}}>{loc.velocity}</span>
+          <div>
+            <div style={{fontSize:12,fontWeight:700,fontFamily:"var(--font-mono)"}}>{loc.id}</div>
+            <div style={{fontSize:10,color:"var(--text-tertiary)"}}>{loc.skuName} · {loc.stock}/{loc.maxStock}</div>
+          </div>
+        </div>
+        <button onClick={onClose} style={{width:22,height:22,borderRadius:6,border:"1px solid var(--border-light)",background:"var(--bg-subtle)",color:"var(--text-tertiary)",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:"flex",borderBottom:"1px solid var(--border-light)"}}>
+        {tabs.map((t,i)=>(
+          <button key={i} onClick={()=>setTab(i)} style={{flex:1,padding:"8px 0",border:"none",cursor:"pointer",fontSize:10,fontWeight:tab===i?600:400,color:tab===i?"var(--accent-purple)":"var(--text-tertiary)",background:"transparent",borderBottom:tab===i?"2px solid var(--accent-purple)":"2px solid transparent",transition:"all 0.15s ease",fontFamily:"var(--font-sans)"}}>{t}</button>
         ))}
       </div>
-      <div style={{background:"var(--bg-card)",borderRadius:"var(--radius-md)",padding:16}}>
-        <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Vaak samen gepickt met</div>
-        {["Afwasmiddel 500ml","WC-Reiniger","Schoonmaakdoekjes 80st"].map((n,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:i<2?"1px solid var(--border-light)":"none",fontSize:12}}>
-            <span style={{fontWeight:500}}>{n}</span>
-            <span style={{fontSize:10,fontWeight:600,color:"var(--text-tertiary)",fontFamily:"var(--font-mono)",background:"var(--bg-elevated)",padding:"2px 8px",borderRadius:"var(--radius-full)"}}>{85-i*12}%</span>
+
+      {/* Tab content */}
+      <div style={{padding:"14px 16px",maxHeight:320,overflow:"auto"}}>
+
+        {/* Tab 0: Overzicht */}
+        {tab===0&&(
+          <div>
+            {/* Gauges */}
+            <div style={{display:"flex",justifyContent:"space-around",marginBottom:12}}>
+              <Gauge value={loc.slottingScore} max={100} label="Slotting" color={loc.slottingScore>70?"var(--accent-green)":loc.slottingScore<35?"var(--accent-red)":"var(--accent-amber)"} size={56}/>
+              <Gauge value={loc.coScore} max={100} label="Co-occur." color={loc.coScore>70?"var(--accent-green)":loc.coScore<40?"var(--accent-red)":"var(--accent-amber)"} size={56}/>
+              <Gauge value={Math.round((1-(loc.routeScore-1)/4)*100)} max={100} label="Route" color={loc.routeScore<2?"var(--accent-green)":loc.routeScore>3?"var(--accent-red)":"var(--accent-amber)"} size={56}/>
+            </div>
+            {/* Metrics */}
+            <div style={{display:"flex",gap:6,marginBottom:12}}>
+              {[{l:"Picks/wk",v:String(loc.picksWeek)},{l:"Gangp.",v:loc.routeScore.toFixed(1)},{l:"Cluster",v:loc.coCluster}].map((m,i)=>(
+                <div key={i} style={{flex:1,background:"var(--bg-card)",borderRadius:6,padding:"6px 8px",textAlign:"center"}}>
+                  <div style={{fontSize:8,color:"var(--text-tertiary)"}}>{m.l}</div>
+                  <div style={{fontSize:12,fontWeight:700,fontFamily:"var(--font-mono)"}}>{m.v}</div>
+                </div>
+              ))}
+            </div>
+            {/* Co-picked */}
+            <div style={{fontSize:9,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:6,fontWeight:600}}>Vaak samen gepickt</div>
+            {["Afwasmiddel 500ml","WC-Reiniger","Schoonmaakdoekjes"].map((n,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:i<2?"1px solid var(--border-light)":"none",fontSize:10}}>
+                <span style={{fontWeight:500}}>{n}</span>
+                <span style={{fontFamily:"var(--font-mono)",color:"var(--text-tertiary)"}}>{85-i*12}%</span>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
+
+        {/* Tab 1: Charts */}
+        {tab===1&&(
+          <div>
+            <div style={{fontSize:9,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,fontWeight:600}}>Pick frequentie — 4 weken</div>
+            <BklitBarChart data={barData} color={VCOL[loc.velocity]}/>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:8,color:"var(--text-tertiary)",marginTop:4,marginBottom:16}}><span>4w geleden</span><span>Nu</span></div>
+
+            <div style={{fontSize:9,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8,fontWeight:600}}>Pick Flow Funnel</div>
+            <FunnelChart
+              data={funnelData.map((d,i)=>({
+                label:d.label,
+                value:d.value,
+                gradient:[
+                  {offset:"0%",color:i===0?"var(--accent-purple)":i===1?"var(--velocity-a)":i===2?"var(--velocity-b)":"var(--accent-green)"},
+                  {offset:"100%",color:i===0?"var(--velocity-a)":i===1?"var(--velocity-b)":i===2?"var(--accent-green)":"var(--accent-green)"},
+                ],
+              }))}
+              layers={3}
+              showPercentage={true}
+              showValues={true}
+              showLabels={true}
+              edges="curved"
+              style={{aspectRatio:"2.5/1"}}
+            />
+          </div>
+        )}
+
+        {/* Tab 2: AI Analyse */}
+        {tab===2&&(
+          <div>
+            <div style={{background:loc.slottingScore<35?"rgba(255,92,108,0.06)":"rgba(54,216,158,0.06)",borderRadius:8,padding:12,marginBottom:12,border:`1px solid ${loc.slottingScore<35?"rgba(255,92,108,0.12)":"rgba(54,216,158,0.12)"}`}}>
+              <div style={{fontSize:11,fontWeight:600,marginBottom:3,color:loc.slottingScore<35?"var(--accent-red)":"var(--accent-green)"}}>{loc.slottingScore<35?"⚠ Herslotting aanbevolen":"✓ Optimaal geslot"}</div>
+              <div style={{fontSize:10,color:"var(--text-secondary)",lineHeight:1.5}}>
+                {loc.slottingScore<35&&loc.picksWeek>30
+                  ?`ML: ${loc.coScore}% co-occurrence met "${loc.coCluster}" maar buiten zone. Hergroepering: ${loc.routeScore.toFixed(1)} → ${(loc.routeScore*0.6).toFixed(1)} gangp/order.`
+                  :loc.slottingScore<35
+                  ?`OR-solver: lage co-occurrence (${loc.coScore}%). Verplaatsing naar ${loc.coCluster}-cluster aanbevolen.`
+                  :`ML+OR: correct in ${loc.coCluster}-cluster (${loc.coScore}%). Route ${loc.routeScore.toFixed(1)} is optimaal.`}
+              </div>
+            </div>
+            {[{l:"Affinity Cluster",v:loc.coCluster},{l:"Velocity",v:`${loc.velocity}-class`},{l:"Co-occurrence Score",v:`${loc.coScore}%`},{l:"Route Impact",v:`${loc.routeScore.toFixed(1)} gangp/order`}].map((f,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:i<3?"1px solid var(--border-light)":"none",fontSize:10}}>
+                <span style={{color:"var(--text-tertiary)"}}>{f.l}</span>
+                <span style={{fontWeight:600,fontFamily:"var(--font-mono)"}}>{f.v}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -752,11 +877,11 @@ export default function WarehousePage(){
         <div style={{flex:1,display:"flex",position:"relative",overflow:"hidden"}}>
           <Map level={level} onHover={onHover} onSelect={setSelected} onShowProposal={()=>{setShowProposal(true);setSelected(null);}} clearSuboptimal={shouldClearSuboptimal}/>
           {showProposal&&<ReslotProposal suboptimalCount={20} onConfirm={()=>{setShowProposal(false);setShowConfirmToast(true);setShouldClearSuboptimal(true);}} onCancel={()=>setShowProposal(false)}/>}
-          {selected&&!showProposal&&<Detail loc={selected} onClose={()=>setSelected(null)}/>}
         </div>
         {hovered&&<Tip loc={hovered.loc} x={hovered.x} y={hovered.y}/>}
         <Legend/>
       </div>
+      {selected&&!showProposal&&<Detail loc={selected} onClose={()=>setSelected(null)}/>}
       {showConfirmToast&&<ConfirmToaster onDone={()=>setShowConfirmToast(false)}/>}
       {showNewSkuWizard&&<NewSkuWizard onConfirm={()=>{setShowNewSkuWizard(false);setShowConfirmToast(true);}} onCancel={()=>setShowNewSkuWizard(false)}/>}
     </div>
