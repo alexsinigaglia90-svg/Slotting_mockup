@@ -1037,7 +1037,6 @@ export default function WarehousePage(){
   const[livePicks,setLivePicks]=useState(0);
   const[suboptimalCount,setSuboptimalCount]=useState(0);
   const[newSkuReady,setNewSkuReady]=useState(false);
-  const[season,setSeason]=useState<"current"|"lente"|"zomer"|"herfst"|"winter">("current");
   const[reslotHighlights,setReslotHighlights]=useState<Set<string>>(new Set());
 
   // Trigger new SKU batch notification after 45 seconds
@@ -1074,34 +1073,8 @@ export default function WarehousePage(){
                 </div>
               ))}
             </div>
-            {/* Season toggle */}
-            <div style={{display:"flex",gap:4,marginLeft:16,paddingLeft:16,borderLeft:"1px solid var(--border-medium)"}}>
-              <span style={{fontSize:10,color:"var(--text-tertiary)",marginRight:2,alignSelf:"center"}}>Seizoen:</span>
-              {([["current","Nu"],["lente","🌱"],["zomer","☀️"],["herfst","🍂"],["winter","❄️"]]as const).map(([s,icon])=>(
-                <button key={s} onClick={()=>setSeason(s as typeof season)} style={{
-                  padding:"3px 8px",borderRadius:6,fontSize:10,fontWeight:season===s?600:400,
-                  border:`1px solid ${season===s?"var(--accent-cict)":"var(--border-medium)"}`,
-                  background:season===s?"rgba(226,212,74,0.15)":"transparent",
-                  color:season===s?"var(--accent-cict)":"var(--text-tertiary)",
-                  cursor:"pointer",transition:"all 0.15s ease",
-                }}>{icon}</button>
-              ))}
-            </div>
           </div>
         </div>
-        {/* Season change banner */}
-        {season!=="current"&&(
-          <div style={{padding:"8px 24px",background:"rgba(226,212,74,0.08)",borderBottom:"1px solid rgba(226,212,74,0.15)",display:"flex",alignItems:"center",gap:10,fontSize:11,animation:"fadeIn 0.3s var(--ease-out)"}}>
-            <span style={{color:"var(--accent-cict)",fontWeight:600}}>⚡ Seizoen simulatie actief:</span>
-            <span style={{color:"var(--text-secondary)"}}>
-              {season==="lente"?"Tuin-producten velocity +180% — herslotting naar forward-pick zone aanbevolen":
-               season==="zomer"?"BBQ/zwembad/zonnebrand velocity +340% — 47 SKUs moeten naar A01-A05":
-               season==="herfst"?"Tuin-producten velocity -60% — vrijmaken forward-pick voor herfst/winter":
-               "Decoratie/verlichting velocity +220% — kerst-SKUs naar forward-pick zone"}
-            </span>
-            <button onClick={()=>{setShowProposal(true);setSelected(null);}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:4,background:"var(--accent-cict)",color:"#1a1a2e",fontSize:10,fontWeight:700,border:"none",cursor:"pointer"}}>Herslot nu</button>
-          </div>
-        )}
         <div style={{flex:1,display:"flex",position:"relative",overflow:"hidden"}}>
           <Map level={level} onHover={onHover} onSelect={setSelected} onShowProposal={()=>{setShowProposal(true);setSelected(null);}} clearSuboptimal={shouldClearSuboptimal} onPickUpdate={setLivePicks} onSuboptimalUpdate={setSuboptimalCount} reslotHighlights={reslotHighlights}/>
         </div>
