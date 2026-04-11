@@ -91,6 +91,7 @@ function Sidebar({active,onChange}:{active:string;onChange:(v:string)=>void}){
           <span style={{fontSize:17,fontWeight:800,letterSpacing:"-0.03em"}}>SlotPilot</span>
         </div>
         <span style={{fontSize:10,fontWeight:500,color:"var(--text-tertiary)",letterSpacing:"0.06em",textTransform:"uppercase"}}>Warehouse Intelligence</span>
+        <div style={{width:40,height:2,borderRadius:1,background:"var(--accent-cict)",marginTop:8,opacity:0.6}}/>
       </div>
       <nav className="stagger" style={{padding:"0 10px",flex:1,display:"flex",flexDirection:"column",gap:2}}>
         {items.map(it=>(
@@ -102,10 +103,27 @@ function Sidebar({active,onChange}:{active:string;onChange:(v:string)=>void}){
         ))}
       </nav>
       <div style={{padding:"16px 20px",borderTop:"1px solid var(--border-light)"}}>
-        <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"var(--text-tertiary)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"var(--text-tertiary)",marginBottom:8}}>
           <span style={{width:6,height:6,borderRadius:"50%",background:"var(--accent-green)"}}/>WMS Connected — DC Echt
         </div>
-        <div style={{fontSize:10,color:"var(--text-tertiary)",marginTop:4}}>Laatste sync: 4 min geleden</div>
+        <div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:14}}>Laatste sync: 4 min geleden</div>
+        {/* CICT Logo */}
+        <div style={{display:"flex",alignItems:"center",gap:8,opacity:0.7}}>
+          <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
+            {/* Yellow background square */}
+            <rect x="5" y="5" width="55" height="55" rx="4" fill="var(--accent-cict)" style={{animation:"cictFadeIn 0.8s ease-out 0.5s backwards"}}/>
+            {/* Arc/swoosh */}
+            <path d="M 52 8 Q 8 8, 8 52" stroke="#1a1a2e" strokeWidth="6" fill="none" strokeLinecap="round" strokeDasharray="120" style={{animation:"cictArcDraw 1.2s ease-out 0.8s backwards"}}/>
+            {/* C letter */}
+            <text x="22" y="52" fontSize="38" fontWeight="900" fill="#1a1a2e" fontFamily="var(--font-sans)" style={{animation:"cictFadeIn 0.6s ease-out 1.2s backwards"}}>C</text>
+            {/* ICT text */}
+            <text x="48" y="80" fontSize="26" fontWeight="900" fill="var(--text-primary)" fontFamily="var(--font-sans)" style={{animation:"cictFadeIn 0.6s ease-out 1.4s backwards"}}>ICT</text>
+          </svg>
+          <div>
+            <div style={{fontSize:9,fontWeight:700,color:"var(--text-tertiary)",letterSpacing:"0.03em"}}>POWERED BY</div>
+            <div style={{fontSize:11,fontWeight:700,color:"var(--accent-cict)"}}>CICT Innovations</div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -380,16 +398,16 @@ function ReslotProposal({suboptimalCount,onConfirm,onCancel}:{suboptimalCount:nu
 
 /* ═══ CONFIRMATION TOASTER — celebration style, top right ═══ */
 function ConfirmToaster({onDone}:{onDone:()=>void}){
-  useEffect(()=>{const t=setTimeout(onDone,6000);return()=>clearTimeout(t);},[onDone]);
-  // Generate confetti particles
-  const confetti=useRef(Array.from({length:24},(_,i)=>({
-    x:50+Math.random()*200-100,
-    y:-20-Math.random()*60,
+  useEffect(()=>{const t=setTimeout(onDone,3000);return()=>clearTimeout(t);},[onDone]);
+  // Generate confetti particles — spread across full width
+  const confetti=useRef(Array.from({length:40},(_,i)=>({
+    x:Math.random()*320-10,
+    y:-10-Math.random()*40,
     rot:Math.random()*360,
     color:["#ff5c7c","#ffb340","#4da8ff","#36d89e","#8b6fff","#ffbe30"][i%6],
     size:4+Math.random()*6,
-    delay:Math.random()*0.5,
-    dur:1.5+Math.random()*1,
+    delay:Math.random()*0.4,
+    dur:1.2+Math.random()*0.8,
   })));
   return(
     <div style={{position:"fixed",top:20,right:20,zIndex:200,animation:"toasterIn 0.5s var(--ease-out)"}}>
@@ -397,7 +415,7 @@ function ConfirmToaster({onDone}:{onDone:()=>void}){
         {/* Confetti */}
         {confetti.current.map((c,i)=>(
           <div key={i} style={{
-            position:"absolute",left:`calc(50% + ${c.x}px)`,top:c.y,
+            position:"absolute",left:c.x,top:c.y,
             width:c.size,height:c.size*0.6,borderRadius:1,
             background:c.color,opacity:0.9,
             transform:`rotate(${c.rot}deg)`,

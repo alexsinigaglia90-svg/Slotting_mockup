@@ -26,6 +26,8 @@
   --accent-amber: #ffbe30;
   --accent-purple: #8b6fff;
   --accent-purple-soft: rgba(139,111,255,0.12);
+  --accent-cict: #E2D44A;
+  --accent-cict-soft: rgba(226,212,74,0.10);
 
   --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -118,6 +120,15 @@ body {
 @keyframes shimmer {
   0% { background-position: -200% center; }
   100% { background-position: 200% center; }
+}
+
+@keyframes cictArcDraw {
+  from { stroke-dashoffset: 120; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes cictFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes confettiFall {
