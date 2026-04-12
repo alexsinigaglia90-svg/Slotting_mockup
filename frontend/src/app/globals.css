@@ -20,11 +20,11 @@
   --color-fg-ghost: rgba(245, 245, 247, 0.22);
 
   /* Colors — accents */
-  --color-accent: #ff6a3d;
-  --color-accent-glow: rgba(255, 106, 61, 0.35);
-  --color-accent-soft: rgba(255, 106, 61, 0.12);
-  --color-secondary: #f472b6;
-  --color-secondary-glow: rgba(244, 114, 182, 0.35);
+  --color-accent: #cada38;
+  --color-accent-glow: rgba(202, 218, 56, 0.4);
+  --color-accent-soft: rgba(202, 218, 56, 0.12);
+  --color-secondary: rgba(255, 255, 255, 0.92);
+  --color-secondary-glow: rgba(255, 255, 255, 0.15);
   --color-critical: #ef4444;
   --color-positive: #10b981;
 

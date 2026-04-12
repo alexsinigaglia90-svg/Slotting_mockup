@@ -129,7 +129,7 @@ export function WarehouseHero() {
                   "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.015) 100%)",
                 backdropFilter: "blur(24px)",
                 boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.06) inset, 0 40px 80px -40px rgba(0,0,0,0.8), 0 0 1px rgba(255,106,61,0.15)",
+                  "0 1px 0 rgba(255,255,255,0.06) inset, 0 40px 80px -40px rgba(0,0,0,0.8), 0 0 1px rgba(202,218,56,0.2)",
               }}
             >
               {/* Glow halo */}
@@ -141,7 +141,7 @@ export function WarehouseHero() {
                   width: 160,
                   height: 160,
                   borderRadius: "50%",
-                  background: "radial-gradient(circle, rgba(255,106,61,0.18) 0%, transparent 65%)",
+                  background: "radial-gradient(circle, rgba(202,218,56,0.22) 0%, transparent 65%)",
                   filter: "blur(12px)",
                 }}
               />
@@ -210,7 +210,7 @@ function HeroLine({ text, accent = false }: { text: string; accent?: boolean }) 
           style={{
             display: "inline-block",
             color: accent ? "var(--color-accent)" : undefined,
-            textShadow: accent ? "0 0 40px rgba(255,106,61,0.4)" : undefined,
+            textShadow: accent ? "0 0 48px rgba(202,218,56,0.55)" : undefined,
           }}
         >
           {ch === " " ? "\u00A0" : ch}

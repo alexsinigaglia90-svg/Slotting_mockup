@@ -11,7 +11,7 @@ export function AmbientBackground() {
       <motion.div
         className="absolute w-[60vw] h-[60vw] rounded-full"
         style={{
-          background: "radial-gradient(circle, rgba(255,106,61,0.18), transparent 60%)",
+          background: "radial-gradient(circle, rgba(202,218,56,0.20), transparent 60%)",
           top: "-10%",
           right: "-10%",
           filter: "blur(80px)",
@@ -22,7 +22,7 @@ export function AmbientBackground() {
       <motion.div
         className="absolute w-[50vw] h-[50vw] rounded-full"
         style={{
-          background: "radial-gradient(circle, rgba(244,114,182,0.12), transparent 60%)",
+          background: "radial-gradient(circle, rgba(255,255,255,0.08), transparent 60%)",
           bottom: "-15%",
           left: "-10%",
           filter: "blur(100px)",
@@ -33,7 +33,7 @@ export function AmbientBackground() {
       <motion.div
         className="absolute w-[40vw] h-[40vw] rounded-full"
         style={{
-          background: "radial-gradient(circle, rgba(255,106,61,0.08), transparent 60%)",
+          background: "radial-gradient(circle, rgba(202,218,56,0.10), transparent 60%)",
           top: "30%",
           left: "25%",
           filter: "blur(120px)",

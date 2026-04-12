@@ -37,14 +37,14 @@ const frag = /* glsl */ `
     float b2 = blob(p, c2, 0.45, 0.5) * 0.4;
     float b3 = blob(p, c3, 0.35, 0.4) * 0.3;
 
-    vec3 orange = vec3(1.0, 0.416, 0.239);
-    vec3 pink   = vec3(0.957, 0.447, 0.714);
-    vec3 bg     = vec3(0.039, 0.039, 0.059);
+    vec3 lime  = vec3(0.792, 0.855, 0.220);  // #cada38 — CICT lime
+    vec3 white = vec3(0.92, 0.92, 0.94);     // soft off-white
+    vec3 bg    = vec3(0.039, 0.039, 0.059);
 
     vec3 col = bg;
-    col += orange * b1;
-    col += pink * b2 * 0.8;
-    col += orange * b3 * 0.6;
+    col += lime * b1 * 0.95;
+    col += white * b2 * 0.22;
+    col += lime * b3 * 0.55;
 
     float n = noise(uv * uResolution.xy * 0.35 + uTime * 0.5) - 0.5;
     col += n * 0.035;
