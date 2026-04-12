@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SlotPilot — Warehouse Intelligence",
-  description: "AI-driven warehouse slotting optimization for Action",
+  description: "Warehouse slotting optimalisatie voor Action",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -66,11 +66,11 @@ const LOCS=genLocs();
 const VCOL:Record<Velocity,string>={A:"#34d89e",B:"#f0c040",C:"#5ba8ff",D:"#8090b8",empty:"transparent"};
 
 const PROBLEMS=[
-  {sev:"critical"as const,msg:"Co-occurrence cluster 'Schoonmaak' verspreid over 5 gangpaden — ML detecteert 34% route-verlies"},
+  {sev:"critical"as const,msg:"Co-occurrence cluster 'Schoonmaak' verspreid over 5 gangpaden — 34% route-verlies gedetecteerd"},
   {sev:"critical"as const,msg:"Gangpad A03: 3.2× meer picks dan A12 — zone-balancering door OR-solver aanbevolen"},
   {sev:"warning"as const,msg:"Seizoenspatroon gedetecteerd: tuin-SKUs velocity stijgt 280% — herclassificatie aanbevolen"},
   {sev:"warning"as const,msg:"Affinity cluster 'Beauty Basics' gefragmenteerd — 6 gangpaden i.p.v. optimaal 2"},
-  {sev:"info"as const,msg:"ML-model: 23 D-class SKUs blokkeren high-frequency posities — swap kandidaten geïdentificeerd"},
+  {sev:"info"as const,msg:"23 D-class SKUs blokkeren high-frequency posities — swap kandidaten geïdentificeerd"},
 ];
 
 /* ═══ SIDEBAR ═══ */
@@ -643,7 +643,7 @@ function Detail({loc,onClose}:{loc:Loc;onClose:()=>void}){
     {label:"Deze zone",value:Math.round(loc.picksWeek*3.8),color:"var(--velocity-b)"},
     {label:"Locatie",value:loc.picksWeek,color:"var(--accent-green)"},
   ];
-  const tabs=["Overzicht","Charts","AI Analyse"];
+  const tabs=["Overzicht","Charts","Analyse"];
 
   return(
     <div style={{position:"fixed",bottom:24,right:24,width:340,background:"var(--bg-surface)",border:"1px solid var(--border-medium)",borderRadius:"var(--radius-lg)",overflow:"hidden",animation:"toasterIn 0.4s var(--ease-out)",boxShadow:"var(--shadow-xl)",zIndex:50}}>
@@ -725,17 +725,17 @@ function Detail({loc,onClose}:{loc:Loc;onClose:()=>void}){
           </div>
         )}
 
-        {/* Tab 2: AI Analyse */}
+        {/* Tab 2: Analyse */}
         {tab===2&&(
           <div>
             <div style={{background:loc.slottingScore<35?"rgba(255,92,108,0.06)":"rgba(54,216,158,0.06)",borderRadius:8,padding:12,marginBottom:12,border:`1px solid ${loc.slottingScore<35?"rgba(255,92,108,0.12)":"rgba(54,216,158,0.12)"}`}}>
               <div style={{fontSize:11,fontWeight:600,marginBottom:3,color:loc.slottingScore<35?"var(--accent-red)":"var(--accent-green)"}}>{loc.slottingScore<35?"⚠ Herslotting aanbevolen":"✓ Optimaal geslot"}</div>
               <div style={{fontSize:10,color:"var(--text-secondary)",lineHeight:1.5}}>
                 {loc.slottingScore<35&&loc.picksWeek>30
-                  ?`ML: ${loc.coScore}% co-occurrence met "${loc.coCluster}" maar buiten zone. Hergroepering: ${loc.routeScore.toFixed(1)} → ${(loc.routeScore*0.6).toFixed(1)} gangp/order.`
+                  ?`${loc.coScore}% co-occurrence met "${loc.coCluster}" maar buiten zone. Hergroepering: ${loc.routeScore.toFixed(1)} → ${(loc.routeScore*0.6).toFixed(1)} gangp/order.`
                   :loc.slottingScore<35
-                  ?`OR-solver: lage co-occurrence (${loc.coScore}%). Verplaatsing naar ${loc.coCluster}-cluster aanbevolen.`
-                  :`ML+OR: correct in ${loc.coCluster}-cluster (${loc.coScore}%). Route ${loc.routeScore.toFixed(1)} is optimaal.`}
+                  ?`Lage co-occurrence (${loc.coScore}%). Verplaatsing naar ${loc.coCluster}-cluster aanbevolen.`
+                  :`Correct in ${loc.coCluster}-cluster (${loc.coScore}%). Route ${loc.routeScore.toFixed(1)} is optimaal.`}
               </div>
             </div>
             {[{l:"Affinity Cluster",v:loc.coCluster},{l:"Velocity",v:`${loc.velocity}-class`},{l:"Co-occurrence Score",v:`${loc.coScore}%`},{l:"Route Impact",v:`${loc.routeScore.toFixed(1)} gangp/order`}].map((f,i)=>(
