@@ -1,4 +1,4 @@
-// Shared mock data used by warehouse map and neural graph
+// Shared mock data used by warehouse map
 
 export type Velocity = "A" | "B" | "C" | "D" | "empty";
 
