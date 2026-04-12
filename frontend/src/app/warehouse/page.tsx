@@ -1,8 +1,13 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { motion } from "motion/react";
 import { FunnelChart } from "@/components/ui/funnel-chart";
 import { WarehouseHero } from "@/components/hero/warehouse-hero";
+import { WarehouseSidebar } from "@/components/warehouse/warehouse-sidebar";
+import { LiveIndicator } from "@/components/ui/live-indicator";
+import { Pill } from "@/components/ui/pill";
+import { Button } from "@/components/ui/button";
 
 /* ═══ MOCK DATA ═══ */
 const NUM_AISLES = 15;
@@ -73,66 +78,6 @@ const PROBLEMS=[
   {sev:"warning"as const,msg:"Affinity cluster 'Beauty Basics' gefragmenteerd — 6 gangpaden i.p.v. optimaal 2"},
   {sev:"info"as const,msg:"23 D-class SKUs blokkeren high-frequency posities — swap kandidaten geïdentificeerd"},
 ];
-
-/* ═══ SIDEBAR ═══ */
-function Sidebar({active,onChange}:{active:string;onChange:(v:string)=>void}){
-  const[collapsed,setCollapsed]=useState(false);
-  const items=[
-    {id:"overview",label:"Overzicht",icon:"⊞"},
-    {id:"warehouse",label:"Warehouse Map",icon:"⊟"},
-    {id:"problems",label:"Problemen",icon:"⚡",badge:5},
-    {id:"optimize",label:"Optimalisatie",icon:"◉"},
-    {id:"movements",label:"Verplaatsingen",icon:"⇄"},
-    {id:"opex",label:"Opex Impact",icon:"€"},
-  ];
-  return(
-    <div style={{width:collapsed?56:240,minHeight:"calc(100vh - 3.5rem)",background:"var(--bg-surface)",borderRight:"1px solid var(--border-medium)",display:"flex",flexDirection:"column",padding:"20px 0",animation:"slideInLeft 0.35s var(--ease-out) backwards",position:"relative",zIndex:2,transition:"width 0.25s var(--ease-out)",overflow:"hidden"}}>
-      <div style={{padding:"0 20px",marginBottom:32}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}>
-          <div style={{width:30,height:30,borderRadius:10,background:"linear-gradient(135deg, var(--accent-purple), var(--velocity-a))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff",boxShadow:"0 2px 8px rgba(139,111,255,0.25)"}}>S</div>
-          <span style={{fontSize:17,fontWeight:800,letterSpacing:"-0.03em"}}>SlotPilot</span>
-        </div>
-        {!collapsed&&<span style={{fontSize:10,fontWeight:500,color:"var(--text-tertiary)",letterSpacing:"0.06em",textTransform:"uppercase"}}>Warehouse Intelligence</span>}
-        {!collapsed&&<div style={{width:40,height:2,borderRadius:1,background:"var(--accent-cict)",marginTop:8,opacity:0.6}}/>}
-        {/* Collapse toggle */}
-        <button onClick={()=>setCollapsed(c=>!c)} style={{position:"absolute",top:20,right:collapsed?14:-10,width:22,height:22,borderRadius:6,border:"1px solid var(--border-medium)",background:"var(--bg-card)",color:"var(--text-tertiary)",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",transition:"right 0.2s ease",zIndex:5}}>{collapsed?"→":"←"}</button>
-      </div>
-      <nav className="stagger" style={{padding:"0 10px",flex:1,display:"flex",flexDirection:"column",gap:2}}>
-        {items.map(it=>(
-          <button key={it.id} onClick={()=>onChange(it.id)} title={it.label} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:collapsed?"9px 0":"9px 12px",justifyContent:collapsed?"center":"flex-start",borderRadius:"var(--radius-sm)",border:"none",cursor:"pointer",background:active===it.id?"var(--accent-purple-soft)":"transparent",color:active===it.id?"var(--accent-purple)":"var(--text-secondary)",fontSize:13,fontWeight:active===it.id?600:450,fontFamily:"var(--font-sans)",transition:"all 0.15s ease",position:"relative"}}>
-            <span style={{width:18,textAlign:"center",fontSize:collapsed?16:13}}>{it.icon}</span>
-            {!collapsed&&<span style={{flex:1,textAlign:"left"}}>{it.label}</span>}
-            {it.badge&&<span style={{background:"var(--accent-red)",color:"#fff",fontSize:8,fontWeight:700,padding:"1px 4px",borderRadius:"var(--radius-full)",minWidth:14,textAlign:"center",...(collapsed?{position:"absolute",top:2,right:2}:{})}}>{it.badge}</span>}
-          </button>
-        ))}
-      </nav>
-      <div style={{padding:collapsed?"16px 8px":"16px 20px",borderTop:"1px solid var(--border-light)",transition:"padding 0.2s ease"}}>
-        <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"var(--text-tertiary)",marginBottom:8,justifyContent:collapsed?"center":"flex-start"}}>
-          <span style={{width:6,height:6,borderRadius:"50%",background:"var(--accent-green)",flexShrink:0}}/>
-          {!collapsed&&<span>WMS Connected — DC Echt</span>}
-        </div>
-        {!collapsed&&<div style={{fontSize:10,color:"var(--text-tertiary)",marginBottom:14}}>Laatste sync: 4 min geleden</div>}
-        {/* CICT Logo */}
-        <div style={{display:"flex",alignItems:"center",gap:8,opacity:0.7,...(collapsed?{justifyContent:"center"}:{})}}>
-          <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
-            {/* Yellow background square */}
-            <rect x="5" y="5" width="55" height="55" rx="4" fill="var(--accent-cict)" style={{animation:"cictFadeIn 0.8s ease-out 0.5s backwards"}}/>
-            {/* Arc/swoosh */}
-            <path d="M 52 8 Q 8 8, 8 52" stroke="#1a1a2e" strokeWidth="6" fill="none" strokeLinecap="round" strokeDasharray="120" style={{animation:"cictArcDraw 1.2s ease-out 0.8s backwards"}}/>
-            {/* C letter */}
-            <text x="22" y="52" fontSize="38" fontWeight="900" fill="#1a1a2e" fontFamily="var(--font-sans)" style={{animation:"cictFadeIn 0.6s ease-out 1.2s backwards"}}>C</text>
-            {/* ICT text */}
-            <text x="48" y="80" fontSize="26" fontWeight="900" fill="var(--text-primary)" fontFamily="var(--font-sans)" style={{animation:"cictFadeIn 0.6s ease-out 1.4s backwards"}}>ICT</text>
-          </svg>
-          {!collapsed&&<div>
-            <div style={{fontSize:9,fontWeight:700,color:"var(--text-tertiary)",letterSpacing:"0.03em"}}>POWERED BY</div>
-            <div style={{fontSize:11,fontWeight:700,color:"var(--accent-cict)"}}>CICT Innovations</div>
-          </div>}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ═══ ZOOMABLE WAREHOUSE MAP WITH LIVE PICKS ═══ */
 function Map({level,onHover,onSelect,onShowProposal,clearSuboptimal,onPickUpdate,onSuboptimalUpdate,reslotHighlights}:{level:number;onHover:(l:Loc|null,x:number,y:number)=>void;onSelect:(l:Loc|null)=>void;onShowProposal:()=>void;clearSuboptimal:boolean;onPickUpdate:(n:number)=>void;onSuboptimalUpdate:(n:number)=>void;reslotHighlights:Set<string>}){
@@ -1016,12 +961,20 @@ function CommandCenter({picks,suboptimalCount,newSkuReady,onOpenReslot,onOpenNew
 /* ═══ LEGEND ═══ */
 function Legend(){
   return(
-    <div style={{position:"absolute",top:8,right:16,background:"var(--bg-elevated)",border:"1px solid var(--border-medium)",borderRadius:"var(--radius-md)",padding:"12px 16px",boxShadow:"var(--shadow-md)",fontSize:11,animation:"fadeInUp 0.3s var(--ease-out) 0.15s backwards",zIndex:4}}>
-      <div style={{fontSize:10,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8,fontWeight:600}}>Velocity</div>
+    <motion.div
+      initial={{opacity:0,y:8}}
+      animate={{opacity:1,y:0}}
+      transition={{duration:0.4,delay:0.15,ease:[0.16,1,0.3,1]}}
+      style={{position:"absolute",top:12,right:16,background:"rgba(10,10,15,0.75)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",border:"1px solid var(--color-border)",borderRadius:"var(--radius)",padding:"10px 14px",boxShadow:"0 8px 32px rgba(0,0,0,0.4)",fontSize:11,zIndex:4}}
+    >
+      <div className="label" style={{marginBottom:8}}>Velocity</div>
       {([["A","Snellopers"],["B","Frequent"],["C","Normaal"],["D","Langzaam"]]as const).map(([v,label])=>(
-        <div key={v} style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}><span style={{width:10,height:10,borderRadius:3,background:VCOL[v as Velocity]}}/><span style={{color:"var(--text-secondary)",fontWeight:450}}>{label}</span></div>
+        <div key={v} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+          <span style={{width:8,height:8,borderRadius:2,background:VCOL[v as Velocity],boxShadow:`0 0 6px ${VCOL[v as Velocity]}88`}}/>
+          <Pill tone="default" style={{fontSize:9,padding:"1px 6px"}}>{label}</Pill>
+        </div>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -1054,32 +1007,118 @@ export default function WarehousePage(){
         <div style={{position:"absolute",width:800,height:800,bottom:"-15%",right:"-5%",background:"radial-gradient(circle, rgba(255,92,124,0.45) 0%, rgba(255,92,124,0.12) 45%, transparent 70%)",borderRadius:"50%",filter:"blur(40px)",animation:"orbFloat2 25s ease-in-out infinite"}}/>
         <div style={{position:"absolute",width:700,height:700,top:"30%",left:"45%",background:"radial-gradient(circle, rgba(77,168,255,0.35) 0%, rgba(77,168,255,0.10) 45%, transparent 70%)",borderRadius:"50%",filter:"blur(40px)",animation:"orbFloat3 28s ease-in-out infinite"}}/>
       </div>
-      <Sidebar active={active} onChange={setActive}/>
+
+      {/* ── Cinematic Sidebar ── */}
+      <WarehouseSidebar active={active} onChange={setActive}/>
+
       <div style={{flex:1,display:"flex",flexDirection:"column",position:"relative"}}>
-        <div style={{height:54,background:"var(--bg-surface)",borderBottom:"1px solid var(--border-medium)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",animation:"fadeIn 0.3s var(--ease-out) backwards"}}>
-          <div style={{display:"flex",alignItems:"center",gap:14}}>
-            <span style={{fontSize:14,fontWeight:700}}>DC Echt</span>
-            <span style={{fontSize:11,color:"var(--text-tertiary)",fontWeight:500,background:"var(--bg-card)",padding:"4px 12px",borderRadius:"var(--radius-full)",fontFamily:"var(--font-mono)"}}>3.000 locaties · 15 gangpaden · 5 niveaus</span>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <span style={{fontSize:11,color:"var(--text-tertiary)",marginRight:4,fontWeight:500}}>Niveau:</span>
-            {[1,2,3,4,5].map(l=>(
-              <button key={l} onClick={()=>setLevel(l===level?0:l)} style={{width:30,height:30,borderRadius:"var(--radius-sm)",border:`1.5px solid ${level===l?"var(--accent-purple)":"var(--border-medium)"}`,background:level===l?"var(--accent-purple)":"var(--bg-surface)",color:level===l?"#fff":"var(--text-secondary)",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"var(--font-mono)",boxShadow:level===l?"var(--shadow-glow-purple)":"none",transition:"all 0.15s ease"}}>{l}</button>
-            ))}
-            <button onClick={()=>setLevel(0)} style={{height:30,padding:"0 14px",borderRadius:"var(--radius-sm)",border:`1.5px solid ${level===0?"var(--accent-purple)":"var(--border-medium)"}`,background:level===0?"var(--accent-purple)":"var(--bg-surface)",color:level===0?"#fff":"var(--text-secondary)",fontSize:11,fontWeight:600,cursor:"pointer",boxShadow:level===0?"var(--shadow-glow-purple)":"none",transition:"all 0.15s ease"}}>Alle</button>
-            {/* Inline legend */}
-            <div style={{display:"flex",gap:10,marginLeft:16,paddingLeft:16,borderLeft:"1px solid var(--border-medium)"}}>
-              {([["A","Snel","#34d89e"],["B","Freq","#f0c040"],["C","Norm","#5ba8ff"],["D","Laag","#8090b8"]]as const).map(([v,label,color])=>(
-                <div key={v} style={{display:"flex",alignItems:"center",gap:4}}>
-                  <span style={{width:8,height:8,borderRadius:2,background:color}}/>
-                  <span style={{fontSize:10,color:"var(--text-tertiary)",fontWeight:450}}>{label}</span>
-                </div>
-              ))}
+
+        {/* ── Cinematic Map Header Bar ── */}
+        <motion.div
+          initial={{opacity:0,y:-8}}
+          animate={{opacity:1,y:0}}
+          transition={{duration:0.4,ease:[0.16,1,0.3,1]}}
+          style={{
+            height:60,
+            background:"rgba(10,10,15,0.55)",
+            backdropFilter:"blur(20px)",
+            WebkitBackdropFilter:"blur(20px)",
+            borderBottom:"1px solid var(--color-border)",
+            display:"flex",
+            alignItems:"center",
+            justifyContent:"space-between",
+            padding:"0 24px",
+            flexShrink:0,
+            gap:16,
+          }}
+        >
+          {/* Left: live pill + meta */}
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <LiveIndicator />
+            <div>
+              <span style={{fontSize:15,fontWeight:800,letterSpacing:"-0.03em",color:"var(--color-fg)"}}>DC-Demo</span>
+              <span style={{fontSize:11,color:"var(--color-fg-muted)",marginLeft:10,fontFamily:"var(--font-mono)"}}>3.000 slots · 15 gangpaden · last sync 2s ago</span>
             </div>
           </div>
-        </div>
-        <div style={{flex:1,display:"flex",position:"relative",overflow:"hidden"}}>
+
+          {/* Center: level switcher with animated active indicator */}
+          <div style={{display:"flex",alignItems:"center",gap:4,position:"relative"}}>
+            <span className="label" style={{marginRight:8}}>Niveau</span>
+            <div style={{display:"flex",gap:3,background:"var(--color-bg-card)",borderRadius:"var(--radius-sm)",padding:"3px"}}>
+              {[1,2,3,4,5].map(l=>{
+                const isActive=level===l;
+                return(
+                  <motion.button
+                    key={l}
+                    onClick={()=>setLevel(l===level?0:l)}
+                    whileHover={{y:-1}}
+                    whileTap={{scale:0.95}}
+                    style={{
+                      position:"relative",
+                      width:32,height:30,
+                      borderRadius:"var(--radius-sm)",
+                      border:"none",
+                      cursor:"pointer",
+                      background:isActive?"var(--color-accent)":"transparent",
+                      color:isActive?"#0a0a0f":"var(--color-fg-muted)",
+                      fontSize:12,fontWeight:700,
+                      fontFamily:"var(--font-mono)",
+                      boxShadow:isActive?"0 0 16px var(--color-accent-glow)":"none",
+                      transition:"background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                    }}
+                  >
+                    {l}
+                  </motion.button>
+                );
+              })}
+              <motion.button
+                onClick={()=>setLevel(0)}
+                whileHover={{y:-1}}
+                whileTap={{scale:0.95}}
+                style={{
+                  height:30,padding:"0 12px",
+                  borderRadius:"var(--radius-sm)",
+                  border:"none",
+                  cursor:"pointer",
+                  background:level===0?"var(--color-accent)":"transparent",
+                  color:level===0?"#0a0a0f":"var(--color-fg-muted)",
+                  fontSize:11,fontWeight:700,
+                  boxShadow:level===0?"0 0 16px var(--color-accent-glow)":"none",
+                  transition:"background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+                }}
+              >
+                Alle
+              </motion.button>
+            </div>
+          </div>
+
+          {/* Right: action buttons */}
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <Button variant="ghost" style={{fontSize:12,height:32,padding:"0 14px"}} onClick={()=>{setShowProposal(true);setSelected(null);}}>
+              Reslot
+            </Button>
+            <Button variant="ghost" style={{fontSize:12,height:32,padding:"0 14px"}}>
+              Simuleer
+            </Button>
+            <Button variant="primary" style={{fontSize:12,height:32,padding:"0 14px"}} onClick={()=>{setShowNewSkuWizard(true);setSelected(null);}}>
+              Nieuwe SKUs
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* ── Map viewport with cinematic frame ── */}
+        <div style={{
+          flex:1,
+          display:"flex",
+          position:"relative",
+          overflow:"hidden",
+          border:"1px solid var(--color-border)",
+          borderTop:"none",
+          borderBottom:"none",
+          boxShadow:"inset 0 20px 40px -20px rgba(0,0,0,0.5), inset 0 -20px 40px -20px rgba(0,0,0,0.4)",
+        }}>
           <Map level={level} onHover={onHover} onSelect={setSelected} onShowProposal={()=>{setShowProposal(true);setSelected(null);}} clearSuboptimal={shouldClearSuboptimal} onPickUpdate={setLivePicks} onSuboptimalUpdate={setSuboptimalCount} reslotHighlights={reslotHighlights}/>
+          <Legend/>
         </div>
         {hovered&&<Tip loc={hovered.loc} x={hovered.x} y={hovered.y}/>}
       </div>
