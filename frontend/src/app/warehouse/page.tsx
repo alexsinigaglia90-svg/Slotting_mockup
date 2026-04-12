@@ -85,7 +85,7 @@ function Sidebar({active,onChange}:{active:string;onChange:(v:string)=>void}){
     {id:"opex",label:"Opex Impact",icon:"€"},
   ];
   return(
-    <div style={{width:collapsed?56:240,minHeight:"100vh",background:"var(--bg-surface)",borderRight:"1px solid var(--border-medium)",display:"flex",flexDirection:"column",padding:"20px 0",animation:"slideInLeft 0.35s var(--ease-out) backwards",position:"relative",zIndex:2,transition:"width 0.25s var(--ease-out)",overflow:"hidden"}}>
+    <div style={{width:collapsed?56:240,minHeight:"calc(100vh - 3.5rem)",background:"var(--bg-surface)",borderRight:"1px solid var(--border-medium)",display:"flex",flexDirection:"column",padding:"20px 0",animation:"slideInLeft 0.35s var(--ease-out) backwards",position:"relative",zIndex:2,transition:"width 0.25s var(--ease-out)",overflow:"hidden"}}>
       <div style={{padding:"0 20px",marginBottom:32}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}>
           <div style={{width:30,height:30,borderRadius:10,background:"linear-gradient(135deg, var(--accent-purple), var(--velocity-a))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff",boxShadow:"0 2px 8px rgba(139,111,255,0.25)"}}>S</div>
@@ -1044,7 +1044,7 @@ export default function WarehousePage(){
   const onHover=useCallback((l:Loc|null,x:number,y:number)=>{setHovered(l?{loc:l,x,y}:null);},[]);
 
   return(
-    <div style={{display:"flex",height:"100vh",overflow:"hidden",position:"relative"}}>
+    <div style={{display:"flex",height:"calc(100vh - 3.5rem)",overflow:"hidden",position:"relative"}}>
       {/* Ambient orbs */}
       <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
         <div style={{position:"absolute",width:900,height:900,top:"-20%",left:"-10%",background:"radial-gradient(circle, rgba(139,111,255,0.55) 0%, rgba(139,111,255,0.15) 45%, transparent 70%)",borderRadius:"50%",filter:"blur(40px)",animation:"orbFloat1 20s ease-in-out infinite"}}/>

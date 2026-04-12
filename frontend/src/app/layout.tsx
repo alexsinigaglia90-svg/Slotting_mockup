@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { AmbientBackground } from "@/components/ui/ambient-background";
+import { Topbar } from "@/components/layout/topbar";
 import "./globals.css";
 
 const inter = Inter({
@@ -25,7 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} ${mono.variable}`}>
       <body>
         <AmbientBackground />
-        {children}
+        <Topbar />
+        <main className="relative z-10 min-h-[calc(100vh-3.5rem)]">
+          {children}
+        </main>
       </body>
     </html>
   );
