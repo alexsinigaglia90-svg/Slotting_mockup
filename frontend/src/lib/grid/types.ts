@@ -60,11 +60,16 @@ export interface Voorstel {
   new_grid: Grid;
   compute_time_ms: number;
   scenario_naam: string;
+  /** SKUs that had nowhere to be placed (e.g. too many adds, not enough slots) */
+  displaced: SKU[];
 }
 
 export interface VoorstelGenerator {
   propose(base: Grid, scenario: ScenarioDelta, scenario_naam: string): Promise<Voorstel>;
 }
+
+/** Sentinel value for physically present but currently unoccupied slots */
+export const EMPTY_SKU_ID = "__EMPTY__";
 
 /** Walking speed constant for uren calculation — documented assumption */
 export const WALKING_SPEED_M_PER_S = 1.2;

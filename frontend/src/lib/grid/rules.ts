@@ -11,6 +11,7 @@ export function checkRules(grid: Grid): Record<RuleLayer, Violation[]> {
   // --- compliance ---
   for (const slot of grid.slots) {
     const sku = grid.skus[slot.sku_id];
+    if (!sku) continue;
     // gevaarlijk naast food
     if (sku.gevarenklasse !== "none" && slot.position.zone === "Z1") {
       compliance.push({
@@ -34,6 +35,7 @@ export function checkRules(grid: Grid): Record<RuleLayer, Violation[]> {
   // --- ergonomie ---
   for (const slot of grid.slots) {
     const sku = grid.skus[slot.sku_id];
+    if (!sku) continue;
     if (sku.pick_frequency_per_shift > HIGH_FREQ_THRESHOLD && slot.ergonomie_zone === "buk") {
       ergonomie.push({
         layer: "ergonomie",
@@ -56,9 +58,13 @@ export function checkRules(grid: Grid): Record<RuleLayer, Violation[]> {
   const zonePickLoad: Record<string, number> = {};
   for (const slot of grid.slots) {
     const sku = grid.skus[slot.sku_id];
+    if (!sku) continue;
     zonePickLoad[slot.position.zone] = (zonePickLoad[slot.position.zone] ?? 0) + sku.pick_frequency_per_shift;
   }
   const totalPicks = Object.values(zonePickLoad).reduce((a, b) => a + b, 0);
+  if (totalPicks === 0) {
+    return { compliance, ergonomie, continuiteit };
+  }
   for (const [zone, load] of Object.entries(zonePickLoad)) {
     if (load / totalPicks > 0.3) {
       continuiteit.push({

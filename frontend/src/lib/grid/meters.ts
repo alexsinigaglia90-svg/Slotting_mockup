@@ -31,6 +31,7 @@ export function computeMetersPerShift(grid: Grid): MetersPerShift {
 
   for (const slot of grid.slots) {
     const sku = grid.skus[slot.sku_id];
+    if (!sku) continue; // empty or missing-SKU slot — skip
     const freq = sku.pick_frequency_per_shift;
     if (freq <= 0) continue;
     const d = distanceBetween(origin, slot.position) * 2; // round trip
