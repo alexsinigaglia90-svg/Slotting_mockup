@@ -2,6 +2,7 @@
 // Replace this file (keeping the buildFixtureGrid signature) to plug in a real dataset.
 
 import type { Grid, SKU, Slot, ErgonomieZone, GevarenKlasse } from "./types";
+import { EMPTY_SKU_ID } from "./types";
 
 const CATEGORIES = [
   "huishouden", "persoonlijke-verzorging", "food-droog", "food-koel",
@@ -40,6 +41,20 @@ export function buildFixtureGrid(): Grid {
       for (let c = 0; c < cols_per_row; c++) {
         for (let n = 0; n < niveaus; n++) {
           const sku_id = `SKU-${String(sku_counter).padStart(5, "0")}`;
+
+          // ~10% empty slots for realistic headroom. Deterministic via seeded rand.
+          const isEmpty = rand() < 0.1;
+          if (isEmpty) {
+            slots.push({
+              id: `${zone}-R${r}-C${c}-N${n}`,
+              position: { zone, rij: r, kolom: c, hoogte_niveau: n },
+              sku_id: EMPTY_SKU_ID,
+              ergonomie_zone: ergoForNiveau(n),
+            });
+            sku_counter++;
+            continue;
+          }
+
           const categorie = CATEGORIES[Math.floor(rand() * CATEGORIES.length)];
 
           // Seeded violations: a handful of "flam" in zone Z1 (food zone), to create compliance violations.

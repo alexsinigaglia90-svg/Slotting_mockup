@@ -36,13 +36,16 @@ describe("clientSideVoorstelGenerator", () => {
 
   it("slot count is preserved even with unbalanced remove (phase-out)", async () => {
     const base = buildFixtureGrid();
-    const toRemove = base.slots.slice(0, 150).map((s) => s.sku_id);
+    // Take 150 occupied (non-empty) slots to remove, so the freed count is deterministic.
+    const occupiedSlots = base.slots.filter((s) => s.sku_id !== EMPTY_SKU_ID);
+    const toRemove = occupiedSlots.slice(0, 150).map((s) => s.sku_id);
+    const baseEmptyCount = base.slots.filter((s) => s.sku_id === EMPTY_SKU_ID).length;
     const voorstel = await clientSideVoorstelGenerator.propose(
       base, { remove: toRemove, add: [] }, "phase-out",
     );
     expect(voorstel.new_grid.slots.length).toBe(base.slots.length);
     const emptyCount = voorstel.new_grid.slots.filter((s) => s.sku_id === EMPTY_SKU_ID).length;
-    expect(emptyCount).toBe(150);
+    expect(emptyCount).toBe(baseEmptyCount + 150);
   });
 
   it("adding more SKUs than free slots does not silently drop them", async () => {

@@ -15,7 +15,7 @@ describe("checkRules", () => {
     const grid = buildFixtureGrid();
     const result = checkRules(grid);
     expect(result.compliance.length).toBeGreaterThan(0);
-    expect(result.compliance[0].rule).toContain("gevaarlijk");
+    expect(result.compliance.some((v) => v.rule.includes("gevaarlijk"))).toBe(true);
   });
 
   it("produces non-empty ergonomie violations", () => {
