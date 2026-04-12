@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { FunnelChart } from "@/components/ui/funnel-chart";
+import { WarehouseHero } from "@/components/hero/warehouse-hero";
 
 /* ═══ MOCK DATA ═══ */
 const NUM_AISLES = 15;
@@ -1044,6 +1045,8 @@ export default function WarehousePage(){
   const onHover=useCallback((l:Loc|null,x:number,y:number)=>{setHovered(l?{loc:l,x,y}:null);},[]);
 
   return(
+    <div style={{overflowY:"auto",height:"calc(100vh - 3.5rem)"}}>
+      <WarehouseHero />
     <div style={{display:"flex",height:"calc(100vh - 3.5rem)",overflow:"hidden",position:"relative"}}>
       {/* Ambient orbs */}
       <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
@@ -1089,6 +1092,7 @@ export default function WarehousePage(){
       {showConfirmToast&&<ConfirmToaster onDone={()=>setShowConfirmToast(false)}/>}
       {showNewSkuWizard&&<NewSkuWizard onConfirm={()=>{setShowNewSkuWizard(false);setNewSkuReady(false);setShowConfirmToast(true);}} onCancel={()=>setShowNewSkuWizard(false)}/>}
       <CommandCenter picks={livePicks} suboptimalCount={suboptimalCount} newSkuReady={newSkuReady} onOpenReslot={()=>{setShowProposal(true);setSelected(null);}} onOpenNewSku={()=>{setShowNewSkuWizard(true);setSelected(null);}}/>
+    </div>
     </div>
   );
 }
