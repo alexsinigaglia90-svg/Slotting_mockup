@@ -75,3 +75,15 @@ export const EMPTY_SKU_ID = "__EMPTY__";
 export const WALKING_SPEED_M_PER_S = 1.2;
 /** Seconds per pick overhead (grab + scan) — documented assumption */
 export const PICK_OVERHEAD_S = 4;
+
+/**
+ * Batch efficiency factor. The naive formula sums meters as if every pick were a solo round-trip
+ * from the dock. Real pickers chain 8-12 picks per route, which reduces actual walked distance
+ * by roughly 6x. This calibration factor (0.16 ≈ 1/6) converts the naive sum to a realistic
+ * shift total. Documented as a demo-calibration constant; replace with a real pick-route model
+ * (slotting/engine/) to remove this approximation.
+ */
+export const BATCH_EFFICIENCY = 0.16;
+
+/** Active pickers in one shift. Used to derive per-picker figures when needed. */
+export const PICKERS_PER_SHIFT = 40;

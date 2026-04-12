@@ -1,5 +1,5 @@
 import type { Grid, MetersPerShift, Position } from "./types";
-import { WALKING_SPEED_M_PER_S, PICK_OVERHEAD_S } from "./types";
+import { WALKING_SPEED_M_PER_S, PICK_OVERHEAD_S, BATCH_EFFICIENCY } from "./types";
 
 const ZONE_SPACING_M = 15;
 const COLUMN_SPACING_M = 1.2;
@@ -39,14 +39,16 @@ export function computeMetersPerShift(grid: Grid): MetersPerShift {
     picks_total += freq;
   }
 
-  const meters_per_pick_avg = picks_total > 0 ? meters_total / picks_total : 0;
-  const seconds_walking = meters_total / WALKING_SPEED_M_PER_S;
+  const meters_calibrated = meters_total * BATCH_EFFICIENCY;
+
+  const meters_per_pick_avg = picks_total > 0 ? meters_calibrated / picks_total : 0;
+  const seconds_walking = meters_calibrated / WALKING_SPEED_M_PER_S;
   const seconds_overhead = picks_total * PICK_OVERHEAD_S;
   const uren_per_shift = (seconds_walking + seconds_overhead) / 3600;
 
   return {
     meters_per_pick_avg,
-    meters_per_shift: meters_total,
+    meters_per_shift: meters_calibrated,
     picks_per_shift: picks_total,
     uren_per_shift,
   };
