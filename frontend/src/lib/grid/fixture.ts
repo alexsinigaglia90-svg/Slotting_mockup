@@ -48,7 +48,8 @@ export function buildFixtureGrid(): Grid {
           else if (categorie === "chemisch" && rand() < 0.3) gevarenklasse = "chem";
 
           const gewicht_kg = 0.1 + rand() * 19.9;
-          const pick_frequency_per_shift = Math.round(rand() * 40);
+          const zone_freq_multiplier = zone === "Z3" ? 2.5 : 1.0;
+          const pick_frequency_per_shift = Math.round(rand() * 40 * zone_freq_multiplier);
 
           skus[sku_id] = {
             id: sku_id,
