@@ -92,9 +92,11 @@ export function Topbar() {
         {/* Right: live + actions */}
         <div className="flex items-center gap-3">
           <LiveIndicator />
-          <Button variant="outline" className="text-[12px]">
-            Presentation mode
-          </Button>
+          <Link href="/present">
+            <Button variant="outline" className="text-[12px]">
+              Presentation mode
+            </Button>
+          </Link>
         </div>
       </div>
     </motion.header>
