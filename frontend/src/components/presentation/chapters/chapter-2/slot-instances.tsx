@@ -1,123 +1,92 @@
 "use client";
 import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import type { Slot } from "@/lib/grid/types";
 import * as THREE from "three";
+import { buildFixtureGrid } from "@/lib/grid";
+
+const ZONE_SPACING = 4;
+const COL_SPACING = 0.7;
+const ROW_SPACING = 0.9;
+const LEVEL_SPACING = 0.35;
+const WAREHOUSE_X_RANGE = 20;
 
 interface SlotInstancesProps {
-  slots: Slot[];
-  activeSet: Set<string>;
-  accentColor: THREE.Color;
+  sweepProgress: number;
 }
 
-// Convert slot position to 3D coords
-function slotTo3D(slot: Slot): [number, number, number] {
-  const zoneIndex = parseInt(slot.position.zone.replace("Z", "")) - 1; // 0..4
-  const x = zoneIndex * 3.8 + slot.position.kolom * 0.38;
-  const z = slot.position.rij * 0.38;
-  const y = slot.position.hoogte_niveau * 0.44;
-  return [x, y, z];
-}
+export function SlotInstances({ sweepProgress }: SlotInstancesProps) {
+  const grid = useMemo(() => buildFixtureGrid(), []);
 
-interface SlotEntry {
-  id: string;
-  pos: [number, number, number];
-}
+  const { positions, driftOffsets, count } = useMemo(() => {
+    const positions: { x: number; y: number; z: number }[] = [];
+    const driftOffsets: { ry: number; dy: number }[] = [];
 
-export function SlotInstances({
-  slots,
-  activeSet,
-  accentColor,
-}: SlotInstancesProps) {
-  const entries = useMemo<SlotEntry[]>(
-    () => slots.map((s) => ({ id: s.id, pos: slotTo3D(s) })),
-    [slots]
-  );
+    for (const slot of grid.slots) {
+      const zoneNum = parseInt(slot.position.zone.replace(/\D/g, ""), 10) || 1;
+      const x = (zoneNum - 1) * ZONE_SPACING + slot.position.kolom * COL_SPACING - 2;
+      const zDepth = slot.position.rij * ROW_SPACING;
+      const y = slot.position.hoogte_niveau * LEVEL_SPACING;
+      positions.push({ x, y, z: zDepth });
 
-  // Use a single instanced mesh with manual color updates via useFrame
-  const meshRef = useRef<THREE.InstancedMesh>(null!);
-  const emissiveValues = useRef<Float32Array>(
-    new Float32Array(slots.length).fill(0)
-  );
-  const colorArray = useRef<Float32Array>(
-    new Float32Array(slots.length * 3).fill(0)
-  );
+      // Deterministic drift from slot id hash
+      const hash = slot.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+      driftOffsets.push({
+        ry: ((hash % 17) - 8) * 0.01, // -0.08 to +0.08 rad
+        dy: ((hash % 13) - 6) * 0.015, // -0.09 to +0.09 units
+      });
+    }
 
-  const activeIds = useRef<Set<string>>(new Set());
+    return { positions, driftOffsets, count: positions.length };
+  }, [grid]);
 
-  // Update active set ref
-  activeIds.current = activeSet;
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const tmpObj = useMemo(() => new THREE.Object3D(), []);
 
-  const dummy = useMemo(() => new THREE.Object3D(), []);
+  // Track previous sweep X to only update changed slots
+  const prevSweepX = useRef<number>(-999);
 
-  // Initialize instance matrices on mount
-  const initDone = useRef(false);
   useFrame(() => {
     if (!meshRef.current) return;
+    const sweepX = -2 + sweepProgress * WAREHOUSE_X_RANGE;
 
-    // Init matrices once
-    if (!initDone.current) {
-      initDone.current = true;
-      for (let i = 0; i < entries.length; i++) {
-        const [x, y, z] = entries[i].pos;
-        dummy.position.set(x, y, z);
-        dummy.updateMatrix();
-        meshRef.current.setMatrixAt(i, dummy.matrix);
-      }
-      meshRef.current.instanceMatrix.needsUpdate = true;
+    // Only do full update if sweep has moved
+    if (Math.abs(sweepX - prevSweepX.current) < 0.001 && sweepProgress > 0 && sweepProgress < 1) {
+      return;
+    }
+    prevSweepX.current = sweepX;
+
+    for (let i = 0; i < count; i++) {
+      const p = positions[i];
+      const d = driftOffsets[i];
+      const passed = p.x < sweepX;
+
+      tmpObj.position.set(p.x, p.y + (passed ? d.dy : 0), p.z);
+      tmpObj.rotation.set(0, passed ? d.ry : 0, 0);
+      tmpObj.scale.set(1, 1, 1);
+      tmpObj.updateMatrix();
+      meshRef.current.setMatrixAt(i, tmpObj.matrix);
+
+      // Color: lime for pristine, desaturated grey for swept
+      const color = passed
+        ? new THREE.Color(0.35, 0.38, 0.22)
+        : new THREE.Color(0.79, 0.86, 0.22);
+      meshRef.current.setColorAt(i, color);
     }
 
-    // Animate emissive per instance
-    const dt = 1 / 60; // approximate
-    const accentR = accentColor.r;
-    const accentG = accentColor.g;
-    const accentB = accentColor.b;
-
-    let dirty = false;
-    for (let i = 0; i < entries.length; i++) {
-      const isActive = activeIds.current.has(entries[i].id);
-      const target = isActive ? 1.0 : 0.0;
-      const speed = isActive ? dt / 0.8 : dt / 1.2;
-      const prev = emissiveValues.current[i];
-      const next = THREE.MathUtils.lerp(prev, target, Math.min(speed * 60, 1));
-      if (Math.abs(next - prev) > 0.002) {
-        emissiveValues.current[i] = next;
-        dirty = true;
-      }
-
-      // base color: very dark blue-grey, lerp to accent when active
-      const t = emissiveValues.current[i];
-      const baseR = 0.04;
-      const baseG = 0.045;
-      const baseB = 0.06;
-      colorArray.current[i * 3 + 0] = baseR + (accentR - baseR) * t;
-      colorArray.current[i * 3 + 1] = baseG + (accentG - baseG) * t;
-      colorArray.current[i * 3 + 2] = baseB + (accentB - baseB) * t;
-
-      if (dirty || t > 0.01) {
-        const col = new THREE.Color(
-          colorArray.current[i * 3 + 0],
-          colorArray.current[i * 3 + 1],
-          colorArray.current[i * 3 + 2]
-        );
-        meshRef.current.setColorAt(i, col);
-      }
-    }
-
+    meshRef.current.instanceMatrix.needsUpdate = true;
     if (meshRef.current.instanceColor) {
       meshRef.current.instanceColor.needsUpdate = true;
     }
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, entries.length]}>
-      <boxGeometry args={[0.3, 0.38, 0.3]} />
+    <instancedMesh ref={meshRef} args={[undefined, undefined, count]} castShadow receiveShadow>
+      <boxGeometry args={[0.35, 0.3, 0.35]} />
       <meshStandardMaterial
-        color={new THREE.Color(0x0a0c10)}
-        emissive={accentColor}
-        emissiveIntensity={0}
-        roughness={0.7}
-        metalness={0.3}
+        vertexColors
+        emissive={new THREE.Color("#cada38")}
+        emissiveIntensity={0.6}
+        toneMapped={false}
       />
     </instancedMesh>
   );
