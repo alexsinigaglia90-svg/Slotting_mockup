@@ -42,7 +42,7 @@ export function ChapterFivePlaceholder() {
             <h1
               className="font-semibold text-center leading-[1.02]"
               style={{
-                fontSize: "clamp(56px, 8vw, 128px)",
+                fontSize: "clamp(48px, 7vw, 104px)",
                 letterSpacing: "-0.045em",
               }}
             >
@@ -70,7 +70,7 @@ export function ChapterFivePlaceholder() {
               visible: { transition: { staggerChildren: 0.15 } },
             }}
             className="absolute left-0 right-0 flex flex-col items-center text-center"
-            style={{ top: "68%" }}
+            style={{ top: "74%" }}
           >
             <motion.div
               variants={{
@@ -119,33 +119,6 @@ export function ChapterFivePlaceholder() {
         )}
       </AnimatePresence>
 
-      {/* Brand mark (beat 4) */}
-      <AnimatePresence>
-        {beat >= 4 && (
-          <motion.div
-            key="brand"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-            className="absolute left-0 right-0 flex items-center justify-center gap-2"
-            style={{ bottom: 80 }}
-          >
-            <div className="text-[11px] uppercase tracking-[0.32em] text-[color:var(--color-fg-muted)]">
-              CICT
-            </div>
-            <div
-              className="h-[6px] w-[6px] rounded-full"
-              style={{
-                background: "var(--color-accent)",
-                boxShadow: "0 0 10px var(--color-accent-glow)",
-              }}
-            />
-            <div className="text-[11px] uppercase tracking-[0.32em] text-[color:var(--color-fg-muted)]">
-              Innovations
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

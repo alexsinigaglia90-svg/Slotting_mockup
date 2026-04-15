@@ -10,11 +10,11 @@ import { ChapterFourPlaceholder } from "./chapters/chapter-4";
 import { ChapterFivePlaceholder } from "./chapters/chapter-5";
 
 const CHAPTERS: { id: ChapterId; label: string; title: string }[] = [
-  { id: 1, label: "Probleem", title: "Het probleem" },
-  { id: 2, label: "Risico", title: "Risico" },
-  { id: 3, label: "Mensen", title: "Mensen" },
-  { id: 4, label: "Tempo", title: "Tempo" },
-  { id: 5, label: "Conclusie", title: "Conclusie" },
+  { id: 1, label: "Problem", title: "The Problem" },
+  { id: 2, label: "Risk", title: "The Risk" },
+  { id: 3, label: "WMS", title: "WMS Integration" },
+  { id: 4, label: "Speed", title: "The Speed" },
+  { id: 5, label: "Promise", title: "The Promise" },
 ];
 
 const CHAPTER_COMPONENTS: Record<ChapterId, React.ComponentType> = {
@@ -42,6 +42,27 @@ export function PresentationShell() {
 
   return (
     <div className="relative h-full w-full flex flex-col">
+      {/* CICT brand mark — persistent across all chapters */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute z-40 flex items-center gap-2"
+        style={{ bottom: 110, right: 40 }}
+      >
+        <div className="text-[10px] uppercase tracking-[0.32em] text-[color:var(--color-fg-dim)]">
+          CICT
+        </div>
+        <div
+          className="h-[5px] w-[5px] rounded-full"
+          style={{
+            background: "var(--color-accent)",
+            boxShadow: "0 0 8px var(--color-accent-glow)",
+          }}
+        />
+        <div className="text-[10px] uppercase tracking-[0.32em] text-[color:var(--color-fg-dim)]">
+          Innovations
+        </div>
+      </div>
+
       {/* Top bar */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
@@ -71,7 +92,7 @@ export function PresentationShell() {
             transition={{ duration: 0.4 }}
             className="text-[11px] uppercase tracking-[0.22em] text-[color:var(--color-fg-muted)]"
           >
-            Hoofdstuk {chapter} / 5 — {meta.label}
+            Chapter {chapter} / 5 — {meta.label}
           </motion.div>
         </AnimatePresence>
 
@@ -112,7 +133,7 @@ export function PresentationShell() {
             disabled={chapter === 1}
             className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--color-fg-muted)] hover:text-[color:var(--color-fg)] disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
           >
-            ← Vorige
+            ← Previous
           </button>
 
           <div className="flex-1 flex items-center gap-3">
@@ -158,7 +179,7 @@ export function PresentationShell() {
             disabled={chapter === 5}
             className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--color-fg-muted)] hover:text-[color:var(--color-fg)] disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
           >
-            Volgende →
+            Next →
           </button>
         </div>
       </motion.footer>

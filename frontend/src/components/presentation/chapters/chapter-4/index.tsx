@@ -192,16 +192,47 @@ function ScenarioBeat({ beat }: { beat: Beat }) {
         {scenario.line}
       </motion.h2>
 
-      {/* Sub-label */}
-      <motion.p
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 0.55, y: 0 }}
-        transition={{ duration: 0.5, ease: EASE_OUT_EXPO, delay: 0.42 }}
-        className="mt-5 text-center text-[color:var(--color-fg-muted)]"
-        style={{ fontSize: "clamp(12px, 1.05vw, 16px)", letterSpacing: "0.04em" }}
+      {/* Response time block */}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, ease: EASE_OUT_EXPO, delay: 0.42 }}
+        className="mt-6 flex flex-col items-center gap-2"
       >
-        New proposal · instant
-      </motion.p>
+        <div className="text-[9px] uppercase tracking-[0.32em] text-[color:var(--color-fg-dim)]">
+          Response Time
+        </div>
+        <div className="flex items-center gap-3">
+          <motion.div
+            animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="h-[8px] w-[8px] rounded-full flex-shrink-0"
+            style={{
+              background: "var(--color-accent)",
+              boxShadow: "0 0 10px rgba(202,218,56,0.6)",
+            }}
+          />
+          <div
+            className="font-medium text-center"
+            style={{
+              fontSize: "clamp(18px, 1.8vw, 28px)",
+              color: "var(--color-accent)",
+              textShadow: "0 0 20px rgba(202,218,56,0.45)",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            New proposal ·{" "}
+            <span
+              style={{
+                fontWeight: 600,
+                textShadow: "0 0 30px rgba(202,218,56,0.6)",
+              }}
+            >
+              instant
+            </span>
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }

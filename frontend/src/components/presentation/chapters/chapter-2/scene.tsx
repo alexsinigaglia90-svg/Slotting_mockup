@@ -1,9 +1,7 @@
 "use client";
-import { useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { PerspectiveCamera } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
-import * as THREE from "three";
 import { DotField } from "./dot-field";
 
 type Beat = 1 | 2 | 3 | 4;
@@ -24,7 +22,6 @@ export function Scene({ sweepProgress, beat }: SceneProps) {
       <CameraDrift beat={beat} />
       <ambientLight intensity={0.1} />
       <DotField sweepProgress={sweepProgress} />
-      <SweepFrontPlane sweepProgress={sweepProgress} />
       <EffectComposer>
         <Bloom intensity={1.2} luminanceThreshold={0.35} luminanceSmoothing={0.9} />
         <Vignette eskil={false} offset={0.2} darkness={0.85} />
@@ -45,27 +42,3 @@ function CameraDrift({ beat }: { beat: Beat }) {
   return null;
 }
 
-function SweepFrontPlane({ sweepProgress }: { sweepProgress: number }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  useFrame(() => {
-    if (!meshRef.current) return;
-    // Warehouse X range ~ -2 to 18. Sweep position x = -2 + sweepProgress * 20.
-    const x = -2 + sweepProgress * 20;
-    meshRef.current.position.x = x;
-    meshRef.current.visible = sweepProgress > 0.001 && sweepProgress < 0.999;
-  });
-
-  return (
-    <mesh ref={meshRef} position={[-2, 3, 6]}>
-      <planeGeometry args={[0.4, 18]} />
-      <meshBasicMaterial
-        color={new THREE.Color("#cada38")}
-        transparent
-        opacity={0.85}
-        toneMapped={false}
-        side={THREE.DoubleSide}
-      />
-    </mesh>
-  );
-}

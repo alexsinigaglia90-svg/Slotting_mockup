@@ -10,7 +10,7 @@ import { EASE_OUT_EXPO } from "@/lib/motion/primitives";
 const COST_PER_METER_EUR = 0.05;
 const SHIFT_SECONDS = 28800;
 
-const TITLE_LINE_1 = "Every meter";
+const TITLE_LINE_1 = "Every step";
 const TITLE_LINE_2 = "is OPEX.";
 
 export function ChapterOnePlaceholder() {
@@ -83,7 +83,7 @@ export function ChapterOnePlaceholder() {
               letterSpacing: "-0.045em",
             }}
           >
-            <SplitReveal text={TITLE_LINE_1} accentWord="meter" delayBase={0.4} />
+            <SplitReveal text={TITLE_LINE_1} accentWord="step" delayBase={0.4} />
             <br />
             <SplitReveal text={TITLE_LINE_2} accentWord="OPEX." delayBase={0.9} />
           </h1>

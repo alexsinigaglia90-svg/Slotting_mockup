@@ -43,7 +43,7 @@ export function Topbar() {
             />
           </motion.div>
           <span className="text-[13px] font-semibold tracking-tight">
-            Slotting
+            ISM
           </span>
           <span className="text-[11px] text-[color:var(--color-fg-dim)] tracking-wider uppercase">
             DC-Demo

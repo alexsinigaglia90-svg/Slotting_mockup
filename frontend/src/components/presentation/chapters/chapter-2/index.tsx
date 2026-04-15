@@ -91,21 +91,6 @@ export function ChapterTwoPlaceholder() {
         02 · The Risk
       </motion.div>
 
-      {/* Top-right label — cross-fades between beat 1 and beat 3 */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={beat >= 3 ? "beat3-label" : "beat1-label"}
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 6 }}
-          transition={{ duration: 0.4 }}
-          className="absolute top-32 right-12 text-[10px] uppercase tracking-[0.24em] text-[color:var(--color-fg-dim)] pointer-events-none"
-          style={{ zIndex: 20 }}
-        >
-          {beat >= 3 ? "Optimized · never again since" : "Optimized · 3 months ago"}
-        </motion.div>
-      </AnimatePresence>
-
       {/* Beat 1: opening copy */}
       <AnimatePresence mode="wait">
         {beat === 1 && (

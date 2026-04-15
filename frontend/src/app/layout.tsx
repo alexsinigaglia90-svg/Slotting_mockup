@@ -17,8 +17,8 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SlotPilot — Warehouse Intelligence",
-  description: "Warehouse slotting optimalisatie voor Action",
+  title: "ISM — Intelligent Slotting Module",
+  description: "Intelligent warehouse slotting optimization for Action",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

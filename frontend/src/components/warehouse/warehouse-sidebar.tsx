@@ -128,7 +128,7 @@ export function WarehouseSidebar({ active, onChange }: SidebarProps) {
                   color: "var(--color-fg)",
                 }}
               >
-                SlotPilot
+                ISM
               </div>
               <div className="label" style={{ marginTop: 1 }}>
                 Warehouse Intelligence
