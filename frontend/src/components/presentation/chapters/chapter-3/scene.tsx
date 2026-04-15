@@ -1,5 +1,5 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { PerspectiveCamera } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
@@ -9,37 +9,105 @@ type Beat = 1 | 2 | 3 | 4;
 
 interface SceneProps {
   beat: Beat;
-  elapsed: number;
+  elapsed: number; // kept for API compat with index.tsx; internally unused
 }
 
-// 8 connection line directions radiating from center
-const LINE_TARGETS = [
-  new THREE.Vector3(6, 4, 0),
-  new THREE.Vector3(-6, 4, 0),
-  new THREE.Vector3(0, 6, 0),
-  new THREE.Vector3(0, -6, 0),
-  new THREE.Vector3(5, -4, 0),
-  new THREE.Vector3(-5, -4, 0),
-  new THREE.Vector3(4, 5, 0),
-  new THREE.Vector3(-4, 5, 0),
-  new THREE.Vector3(6, 0, 0),
-  new THREE.Vector3(-6, 0, 0),
-];
+// ─── Vertex shader ────────────────────────────────────────────────────────────
+const VERT = /* glsl */ `
+varying vec3 vNormal;
+varying vec3 vViewDir;
+varying vec3 vPos;
 
-export function Scene({ beat, elapsed }: SceneProps) {
+void main() {
+  vNormal = normalMatrix * normal;
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vViewDir = -mv.xyz;
+  vPos = position;
+  gl_Position = projectionMatrix * mv;
+}
+`;
+
+// ─── Fragment shader ─────────────────────────────────────────────────────────
+const FRAG = /* glsl */ `
+precision highp float;
+
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uOrbIntensity;
+uniform float uConnectionAlpha;
+
+varying vec3 vNormal;
+varying vec3 vViewDir;
+varying vec3 vPos;
+
+float hash(vec3 p) {
+  p = fract(p * 0.3183099 + 0.1);
+  p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
+float noise(vec3 p) {
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(
+      mix(hash(i + vec3(0.0, 0.0, 0.0)), hash(i + vec3(1.0, 0.0, 0.0)), f.x),
+      mix(hash(i + vec3(0.0, 1.0, 0.0)), hash(i + vec3(1.0, 1.0, 0.0)), f.x),
+      f.y
+    ),
+    mix(
+      mix(hash(i + vec3(0.0, 0.0, 1.0)), hash(i + vec3(1.0, 0.0, 1.0)), f.x),
+      mix(hash(i + vec3(0.0, 1.0, 1.0)), hash(i + vec3(1.0, 1.0, 1.0)), f.x),
+      f.y
+    ),
+    f.z
+  );
+}
+
+void main() {
+  vec3 n = normalize(vNormal);
+  vec3 v = normalize(vViewDir);
+
+  // Fresnel — brighter at grazing angles
+  float fres = pow(1.0 - max(dot(n, v), 0.0), 3.0);
+
+  // Flowing noise on the surface
+  float nsample = noise(vPos * 2.5 + vec3(uTime * 0.25, uTime * 0.15, uTime * 0.1));
+  nsample += 0.5 * noise(vPos * 5.0 + vec3(-uTime * 0.3, 0.0, uTime * 0.2));
+  nsample = smoothstep(0.3, 1.0, nsample);
+
+  // Moving highlight band
+  float band = sin(vPos.x * 3.0 + vPos.y * 2.0 + uTime * 0.8) * 0.5 + 0.5;
+  band = smoothstep(0.55, 0.85, band);
+
+  // Combine
+  vec3 base = mix(uColorA, uColorB, nsample * 0.7);
+  vec3 col = base;
+  col += uColorB * fres * 1.4 * uOrbIntensity;
+  col += uColorB * band * 0.35;
+
+  // Connection state: when uConnectionAlpha > 0, add a subtle ring pulse
+  float ring = smoothstep(0.5, 0.52, abs(nsample - 0.5)) * uConnectionAlpha;
+  col += uColorB * ring * 0.6;
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+// ─── Scene root ──────────────────────────────────────────────────────────────
+export function Scene({ beat }: SceneProps) {
   return (
     <Canvas
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: false }}
       style={{ background: "#0a0a0f", position: "absolute", inset: 0 }}
     >
-      <PerspectiveCamera makeDefault position={[0, 0, 8]} fov={45} />
-      <ambientLight intensity={0.05} />
-      <Orb beat={beat} elapsed={elapsed} />
-      {beat === 3 &&
-        LINE_TARGETS.map((target, i) => (
-          <ConnectionLine key={i} target={target} index={i} elapsed={elapsed} />
-        ))}
+      <PerspectiveCamera makeDefault position={[0, 0.5, 5]} fov={40} />
+      <ambientLight intensity={0.15} />
+      <CentralOrb beat={beat} />
+      {beat === 3 && <Satellites />}
       <EffectComposer>
         <Bloom intensity={1.8} luminanceThreshold={0.3} luminanceSmoothing={0.9} />
         <Vignette eskil={false} offset={0.25} darkness={0.9} />
@@ -48,147 +116,95 @@ export function Scene({ beat, elapsed }: SceneProps) {
   );
 }
 
-function Orb({ beat, elapsed }: { beat: Beat; elapsed: number }) {
+// ─── Central liquid-mercury orb ───────────────────────────────────────────────
+function CentralOrb({ beat }: { beat: Beat }) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const innerRef = useRef<THREE.Mesh>(null);
+  const matRef = useRef<THREE.ShaderMaterial>(null);
 
-  useFrame((state) => {
-    if (!meshRef.current || !innerRef.current) return;
-    const t = state.clock.getElapsedTime();
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uColorA: { value: new THREE.Color(0.08, 0.1, 0.04) },
+      uColorB: { value: new THREE.Color(0.79, 0.86, 0.22) },
+      uOrbIntensity: { value: 0.6 },
+      uConnectionAlpha: { value: 0.0 },
+    }),
+    []
+  );
 
-    // Breathing pulse: base scale + breath
-    let baseScale = 1.0;
-    let emissiveIntensity = 1.5;
+  useFrame((state, delta) => {
+    if (!matRef.current) return;
+    matRef.current.uniforms.uTime.value = state.clock.elapsedTime;
 
-    if (beat === 1) {
-      baseScale = 1.0;
-      emissiveIntensity = 1.5;
-    } else if (beat === 2) {
-      baseScale = 1.25;
-      emissiveIntensity = 3.0;
-    } else if (beat === 3) {
-      baseScale = 1.15;
-      emissiveIntensity = 2.2;
-    } else if (beat === 4) {
-      // Contracts back
-      baseScale = 1.0;
-      emissiveIntensity = 1.2;
+    const targetIntensity = beat === 2 ? 1.0 : 0.7;
+    const targetConn = beat === 3 ? 1.0 : 0.0;
+
+    matRef.current.uniforms.uOrbIntensity.value +=
+      (targetIntensity - matRef.current.uniforms.uOrbIntensity.value) * delta * 2.0;
+    matRef.current.uniforms.uConnectionAlpha.value +=
+      (targetConn - matRef.current.uniforms.uConnectionAlpha.value) * delta * 3.0;
+
+    // Gentle breathing scale
+    if (meshRef.current) {
+      const s = 1 + Math.sin(state.clock.elapsedTime * 0.8) * 0.02;
+      meshRef.current.scale.setScalar(s);
     }
-
-    const breath = Math.sin(t * Math.PI) * 0.05; // 0.05 amplitude = 1.0→1.1 range
-    const scale = baseScale + breath;
-
-    meshRef.current.scale.setScalar(scale);
-    innerRef.current.scale.setScalar(scale * 0.65);
-
-    // Update emissive on material
-    const mat = meshRef.current.material as THREE.MeshStandardMaterial;
-    mat.emissiveIntensity = emissiveIntensity + Math.sin(t * 2) * 0.3;
-
-    const innerMat = innerRef.current.material as THREE.MeshStandardMaterial;
-    innerMat.emissiveIntensity = emissiveIntensity * 0.6;
   });
 
   return (
-    <>
-      {/* Outer orb */}
-      <mesh ref={meshRef}>
-        <icosahedronGeometry args={[1, 4]} />
-        <meshStandardMaterial
-          color="#cada38"
-          emissive="#cada38"
-          emissiveIntensity={1.5}
-          roughness={0.15}
-          metalness={0.1}
-          toneMapped={false}
-        />
-      </mesh>
-      {/* Inner brighter core */}
-      <mesh ref={innerRef}>
-        <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial
-          color="#edf5a8"
-          emissive="#ffffff"
-          emissiveIntensity={0.9}
-          roughness={0.0}
-          metalness={0.0}
-          toneMapped={false}
-        />
-      </mesh>
-    </>
+    <mesh ref={meshRef} position={[0, -1.5, 0]}>
+      <icosahedronGeometry args={[1.2, 6]} />
+      <shaderMaterial
+        ref={matRef}
+        vertexShader={VERT}
+        fragmentShader={FRAG}
+        uniforms={uniforms}
+        toneMapped={false}
+      />
+    </mesh>
   );
 }
 
-function ConnectionLine({
-  target,
-  index,
-  elapsed,
-}: {
-  target: THREE.Vector3;
-  index: number;
-  elapsed: number;
-}) {
-  const lineRef = useRef<THREE.Line>(null!);
-  const particleRef = useRef<THREE.Mesh>(null);
+// ─── Orbital satellites (beat 3 only) ────────────────────────────────────────
+function Satellites() {
+  const configs = useMemo(() => {
+    const c = [];
+    for (let i = 0; i < 8; i++) {
+      const plane = i < 4 ? 0 : 1;
+      const axisTilt = plane === 0 ? 0 : Math.PI / 5;
+      const radiusA = plane === 0 ? 2.4 : 2.1;
+      const radiusB = plane === 0 ? 2.6 : 2.3;
+      const phase = (i / 4) * Math.PI * 2 + plane * 0.8;
+      const speed = 0.3 + i * 0.04;
+      c.push({ axisTilt, radiusA, radiusB, phase, speed });
+    }
+    return c;
+  }, []);
 
-  const points = [new THREE.Vector3(0, 0, 0), target];
-  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const groupRef = useRef<THREE.Group>(null);
 
   useFrame((state) => {
-    const t = state.clock.getElapsedTime();
-
-    // Stagger fade-in per line
-    const staggerDelay = index * 0.12;
-    const age = Math.max(0, t - staggerDelay);
-    const opacity = Math.min(1, age * 2) * 0.55;
-
-    if (lineRef.current) {
-      (lineRef.current.material as THREE.LineBasicMaterial).opacity = opacity;
-    }
-
-    // Animate particle along line
-    if (particleRef.current) {
-      const speed = 0.4 + index * 0.03;
-      const frac = ((t * speed + index * 0.3) % 1.2) / 1.2;
-      const clampedFrac = Math.min(1, Math.max(0, frac));
-      const pos = new THREE.Vector3().lerpVectors(points[0], target, clampedFrac);
-      particleRef.current.position.copy(pos);
-      // Fade out toward end
-      const particleOpacity = Math.max(0, 1 - clampedFrac * 1.5);
-      (particleRef.current.material as THREE.MeshBasicMaterial).opacity =
-        particleOpacity * opacity * 1.8;
-    }
+    if (!groupRef.current) return;
+    const t = state.clock.elapsedTime;
+    configs.forEach((cfg, i) => {
+      const child = groupRef.current!.children[i];
+      if (!child) return;
+      const angle = t * cfg.speed + cfg.phase;
+      const x = Math.cos(angle) * cfg.radiusA;
+      const z = Math.sin(angle) * cfg.radiusB;
+      const y = Math.sin(angle) * Math.sin(cfg.axisTilt) * cfg.radiusA;
+      child.position.set(x, -1.5 + y * 0.5, z);
+    });
   });
 
   return (
-    <>
-      <primitive
-        object={
-          (() => {
-            const line = new THREE.Line(
-              geometry,
-              new THREE.LineBasicMaterial({
-                color: "#cada38",
-                transparent: true,
-                opacity: 0,
-                toneMapped: false,
-              })
-            );
-            (line as unknown as THREE.Line & { __lineRef?: boolean }).__lineRef = true;
-            return line;
-          })()
-        }
-        ref={lineRef}
-      />
-      <mesh ref={particleRef} position={[0, 0, 0]}>
-        <sphereGeometry args={[0.06, 8, 8]} />
-        <meshBasicMaterial
-          color="#edf5a8"
-          transparent
-          opacity={0}
-          toneMapped={false}
-        />
-      </mesh>
-    </>
+    <group ref={groupRef}>
+      {configs.map((_, i) => (
+        <mesh key={i}>
+          <sphereGeometry args={[0.15, 32, 32]} />
+          <meshBasicMaterial color="#cada38" toneMapped={false} />
+        </mesh>
+      ))}
+    </group>
   );
 }
