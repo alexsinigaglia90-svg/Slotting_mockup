@@ -4,7 +4,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { PerspectiveCamera } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
-import { SlotInstances } from "./slot-instances";
+import { DotField } from "./dot-field";
 
 type Beat = 1 | 2 | 3 | 4;
 
@@ -22,9 +22,8 @@ export function Scene({ sweepProgress, beat }: SceneProps) {
     >
       <PerspectiveCamera makeDefault position={[10, 8, 20]} fov={40} />
       <CameraDrift beat={beat} />
-      <ambientLight intensity={0.15} />
-      <directionalLight position={[15, 20, 10]} intensity={0.4} color="#ffffff" />
-      <SlotInstances sweepProgress={sweepProgress} />
+      <ambientLight intensity={0.1} />
+      <DotField sweepProgress={sweepProgress} />
       <SweepFrontPlane sweepProgress={sweepProgress} />
       <EffectComposer>
         <Bloom intensity={1.2} luminanceThreshold={0.35} luminanceSmoothing={0.9} />
@@ -41,7 +40,7 @@ function CameraDrift({ beat }: { beat: Beat }) {
     // In beat 3+, drift camera slightly lower
     const targetY = beat >= 3 ? 7 : 8;
     state.camera.position.y += (targetY - state.camera.position.y) * delta * 0.8;
-    state.camera.lookAt(12, 2, 12);
+    state.camera.lookAt(8, 4, 10);
   });
   return null;
 }
@@ -59,7 +58,7 @@ function SweepFrontPlane({ sweepProgress }: { sweepProgress: number }) {
 
   return (
     <mesh ref={meshRef} position={[-2, 3, 6]}>
-      <planeGeometry args={[0.25, 14]} />
+      <planeGeometry args={[0.4, 18]} />
       <meshBasicMaterial
         color={new THREE.Color("#cada38")}
         transparent
